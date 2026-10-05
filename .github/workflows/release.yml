@@ -1,0 +1,42 @@
+name: Release
+
+# Publishing a GitHub Release (tag vX.Y.Z) publishes that version to npm.
+# Authentication is npm trusted publishing (OIDC): no token is stored
+# anywhere, and npm attaches a provenance statement linking the package to
+# this workflow run. Configure once on npmjs.com: package settings ->
+# Trusted Publisher -> GitHub Actions, user AltangerelG, repository
+# react-mongol, workflow release.yml.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          # Release builds never restore a cache.
+          package-manager-cache: false
+      # Trusted publishing needs npm >= 11.5.1.
+      - run: npm install -g npm@^11.5.1
+      - name: Tag matches package.json
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "Release tag $GITHUB_REF_NAME does not match package.json ($expected)" >&2
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm publish --access public
