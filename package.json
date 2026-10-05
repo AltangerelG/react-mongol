@@ -1,0 +1,70 @@
+{
+  "name": "react-mongol",
+  "version": "0.0.0",
+  "description": "React components and primitives for traditional Mongolian script (Mongol bichig): vertical writing-mode layout, mixed-script run handling, and Unicode-correct text utilities.",
+  "keywords": [
+    "react",
+    "mongolian",
+    "mongol-bichig",
+    "traditional-mongolian",
+    "vertical-text",
+    "writing-mode",
+    "unicode",
+    "i18n",
+    "mvs",
+    "fvs"
+  ],
+  "license": "MIT",
+  "author": "Altangerel",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AltangerelG/react-mongol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AltangerelG/react-mongol/issues"
+  },
+  "homepage": "https://github.com/AltangerelG/react-mongol#readme",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^26.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

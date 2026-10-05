@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+        # The library targets React 18 and 19; a change that works on only one
+        # of them is a break, so both are exercised.
+        react: ['18', '19']
+    name: node ${{ matrix.node }} / react ${{ matrix.react }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Pin React version
+        if: matrix.react == '18'
+        run: npm install --no-save react@18 react-dom@18 @types/react@18 @types/react-dom@18
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
