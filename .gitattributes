@@ -1,0 +1,11 @@
+# Pin LF in the repository regardless of core.autocrlf on the checkout machine.
+# Without this, a Windows contributor's editor can rewrite every line of a file
+# it only meant to touch once, burying the real change in a whole-file diff.
+* text=auto eol=lf
+
+# Keep binaries and lockfile diffs sane.
+*.png binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+package-lock.json -diff linguist-generated
