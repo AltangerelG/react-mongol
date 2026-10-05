@@ -42,6 +42,9 @@ export function Greeting() {
 }
 ```
 
+A runnable demo of every feature lives in [`examples/demo`](examples/demo)
+(`npm run build` at the root, then `npm install && npm run dev` there).
+
 `Mongol` sets `writing-mode: vertical-lr` and a Mongolian font stack. Because the
 block direction is now horizontal, **`height` controls line length** and `width`
 controls how many columns fit.
@@ -101,6 +104,17 @@ const { available, family, pending } = useMongolFont();
 if (!pending && !available) return <InstallFontNotice />;
 ```
 
+`available` means Mongolian letters draw as glyphs, not tofu. `family` is the
+first font from the list that is present, or `null` when the browser renders
+through a fallback of its own choosing (including Mongolian Baiti on Windows,
+which is both installed and the system fallback, so measurement cannot tell
+them apart).
+
+Detection measures text on a canvas. `document.fonts.check` is not used: it
+answers `true` for any family name it has never seen, so it would report a
+font on every device. The measuring logic is exported as
+`detectMongolFont(families, measure)` for use outside React.
+
 ### `splitRuns(text)`
 
 The segmentation core, usable on its own.
@@ -140,6 +154,18 @@ npm install @fontsource/noto-sans-mongolian
 import '@fontsource/noto-sans-mongolian';
 ```
 
+Noto Sans Mongolian's Latin and digit glyphs have no vertical advance: set
+upright, they all land on one spot. `MongolText` therefore draws upright Latin,
+Cyrillic and digit runs from a separate family, `sans-serif` by default. Set the
+`--mongol-upright-font` custom property to choose it:
+
+```css
+.my-vertical-text { --mongol-upright-font: 'Inter', sans-serif; }
+```
+
+If you set `text-orientation: upright` yourself, outside `MongolText`, give that
+text a font other than Noto Sans Mongolian for the same reason.
+
 The default stack is `Noto Sans Mongolian`, `Mongolian Baiti` (ships with Windows
 Vista and later), then common Inner Mongolian installs. Menksoft faces are
 deliberately **excluded**: they encode glyphs in the Private Use Area rather than
@@ -170,6 +196,10 @@ verify there if you support it. The
 [W3C Mongolian Gap Analysis](https://www.w3.org/TR/mong-gap/) catalogues what is
 still missing across the platform.
 
+Vertical form fields need no component: `<input>` and `<textarea>` accept
+`writing-mode: vertical-lr` natively, caret included, since Chrome 124,
+Firefox 120 and Safari 17.4.
+
 One platform quirk worth knowing: a `<td>` with a vertical writing mode will not
 go vertical in some browsers unless its height is set explicitly.
 
@@ -177,7 +207,8 @@ go vertical in some browsers unless its height is set explicitly.
 
 Not yet implemented, roughly in order of how much they are missed:
 
-- `MongolInput` / `MongolTextArea` — vertical form fields with a usable caret.
+- A browser-level layout test. Unit tests run in jsdom, which does no text
+  layout, so a font that collapses upright runs (see Fonts) would pass them.
 - UAX-14 line breaking for Mongolian.
 - A provider for font and orientation defaults across a subtree.
 - Guidance and escape hatches for component libraries that style with physical

@@ -4,6 +4,9 @@ import { splitRuns } from './runs.js';
 import { resolveOrientation } from './orientation.js';
 import type { OrientationOption } from './orientation.js';
 
+/** Override with the `--mongol-upright-font` custom property. */
+export const UPRIGHT_FONT_FAMILY = 'var(--mongol-upright-font, sans-serif)';
+
 export interface MongolTextProps
   extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
   /**
@@ -37,6 +40,12 @@ export const MongolText = forwardRef<HTMLSpanElement, MongolTextProps>(
         return createElement(Fragment, { key: run.start }, run.text);
       }
       const style: CSSProperties = { textOrientation: resolved };
+      // Mongolian faces often give their Latin and digit glyphs no vertical
+      // advance (Noto Sans Mongolian does), so set upright they stack on one
+      // spot. Draw upright non-Mongolian runs from a separate family.
+      if (resolved === 'upright' && run.kind !== 'mongolian') {
+        style.fontFamily = UPRIGHT_FONT_FAMILY;
+      }
       return createElement('span', { key: run.start, style }, run.text);
     });
 

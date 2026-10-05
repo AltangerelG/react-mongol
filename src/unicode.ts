@@ -8,17 +8,17 @@
  */
 
 /** Mongolian Free Variation Selector 1 (U+180B). Selects a positional variant. */
-export const FVS1 = '᠋';
+export const FVS1 = '\u180B';
 /** Mongolian Free Variation Selector 2 (U+180C). */
-export const FVS2 = '᠌';
+export const FVS2 = '\u180C';
 /** Mongolian Free Variation Selector 3 (U+180D). */
-export const FVS3 = '᠍';
+export const FVS3 = '\u180D';
 /**
  * Mongolian Free Variation Selector 4 (U+180F), added in Unicode 14.0.
  * Font and shaping-engine support is still uneven; treat output containing it
  * as something to verify visually rather than assume.
  */
-export const FVS4 = '᠏';
+export const FVS4 = '\u180F';
 
 /**
  * Mongolian Vowel Separator (U+180E). Separates a word-final a/e from the stem.
@@ -26,25 +26,25 @@ export const FVS4 = '᠏';
  * Its General_Category changed from Zs (space) to Cf (format) in Unicode 6.3,
  * which is why older code that treated it as whitespace mis-splits words.
  */
-export const MVS = '᠎';
+export const MVS = '\u180E';
 
 /** Mongolian Nirugu (U+180A), the connecting/lengthening bar. */
-export const NIRUGU = '᠊';
+export const NIRUGU = '\u180A';
 
 /** Mongolian Todo Soft Hyphen (U+1806), a *prefixed* format control. */
-export const TODO_SOFT_HYPHEN = '᠆';
+export const TODO_SOFT_HYPHEN = '\u1806';
 
 /**
  * Narrow No-Break Space (U+202F). Not in the Mongolian block, but the
  * conventional separator between a stem and a grammatical suffix, and it must
  * never be treated as a word boundary or rotated independently.
  */
-export const NNBSP = ' ';
+export const NNBSP = '\u202F';
 
 /** Zero Width Joiner (U+200D), used to force a medial/initial positional form. */
-export const ZWJ = '‍';
+export const ZWJ = '\u200D';
 /** Zero Width Non-Joiner (U+200C), used to force an isolated form. */
-export const ZWNJ = '‌';
+export const ZWNJ = '\u200C';
 
 /** Inclusive code point ranges, as `[first, last]` pairs. */
 export type CodeRange = readonly [number, number];

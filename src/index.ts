@@ -4,8 +4,8 @@ export type { MongolProps, MongolTag } from './Mongol.js';
 export { MongolText } from './MongolText.js';
 export type { MongolTextProps } from './MongolText.js';
 
-export { useMongolFont } from './useMongolFont.js';
-export type { MongolFontStatus } from './useMongolFont.js';
+export { detectMongolFont, useMongolFont } from './useMongolFont.js';
+export type { MongolFontStatus, TextMeasurer } from './useMongolFont.js';
 
 export { splitRuns, classifyCodePoint } from './runs.js';
 export type { RunKind, TextRun } from './runs.js';

@@ -1,6 +1,6 @@
 {
   "name": "react-mongol",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React components and primitives for traditional Mongolian script (Mongol bichig): vertical writing-mode layout, mixed-script run handling, and Unicode-correct text utilities.",
   "keywords": [
     "react",

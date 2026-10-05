@@ -76,6 +76,19 @@ describe('MongolText', () => {
     expect((inner[0] as HTMLElement).style.textOrientation).toBe('upright');
   });
 
+  it('draws upright Latin and digits from a separate, overridable family', () => {
+    const { container } = render(
+      <MongolText orientation={{ latin: 'upright', mongolian: 'upright', digit: 'sideways' }}>
+        {MONGOL + ' abc 12'}
+      </MongolText>,
+    );
+    const spans = [...container.firstElementChild!.querySelectorAll('span')] as HTMLElement[];
+    const byText = (text: string) => spans.find((s) => s.textContent === text)!;
+    expect(byText('abc').style.fontFamily).toContain('--mongol-upright-font');
+    expect(byText(MONGOL).style.fontFamily).toBe('');
+    expect(byText('12').style.fontFamily).toBe('');
+  });
+
   it('round-trips arbitrary mixed text through segmentation', () => {
     const source = `${MONGOL} abc 2026 Мон!`;
     const { container } = render(<MongolText>{source}</MongolText>);
