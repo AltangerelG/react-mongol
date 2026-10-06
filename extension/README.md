@@ -22,7 +22,7 @@ npm run extension        # builds extension/build/ and the store zip
 - **Chrome / Edge:** open `chrome://extensions` (or `edge://extensions`), turn on
   Developer mode, choose **Load unpacked**, and pick `extension/build`.
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, choose **Load
-  Temporary Add-on**, and pick `extension/build/manifest.json`.
+  Temporary Add-on**, and pick `extension/build-firefox/manifest.json`.
 
 Then open a Mongolian news site and click the ᠮᠣ button. The badge shows `ON`
 (whole page) or `R` (reader view).
@@ -42,7 +42,9 @@ Then open a Mongolian news site and click the ᠮᠣ button. The badge shows `ON
 
 ## Store submission
 
-Upload `extension/mongol-bichig-extension-<version>.zip`.
+Upload `extension/mongol-bichig-extension-<version>.zip` to Chrome and Edge, and
+`extension/mongol-bichig-extension-<version>-firefox.zip` to Firefox (Firefox
+needs a different background setting and an add-on id).
 
 | Store | Cost | Review |
 | --- | --- | --- |

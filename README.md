@@ -9,6 +9,8 @@ mixed-script orientation and Unicode-correct text.
 
 ```bash
 npm install react-mongol
+# or straight from GitHub (builds itself on install):
+npm install github:AltangerelG/react-mongol
 ```
 
 Ships ESM **and** CJS, so it works in Vite, Next.js and older Create React App
