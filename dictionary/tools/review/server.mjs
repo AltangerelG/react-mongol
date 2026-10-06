@@ -11,12 +11,13 @@ import { appendFile, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { toScript } from '@gege-mn/mongol-bichig';
+import { fromScript, toScript } from '@gege-mn/mongol-bichig';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const data = join(here, '..', '..', 'data');
 const QUEUE = join(data, 'queue.json');
-const REVIEWED = join(data, 'reviewed.jsonl');
+// REVIEWED_FILE points a test run at a scratch copy instead of the real data.
+const REVIEWED = process.env.REVIEWED_FILE ?? join(data, 'reviewed.jsonl');
 const require = createRequire(import.meta.url);
 const FONT = join(
   dirname(require.resolve('@fontsource/noto-sans-mongolian/package.json')),
@@ -38,13 +39,37 @@ export function romanToScript(latin) {
   return normalized.split(/\s+/).map((part) => toScript(part)).join('\u202F');
 }
 
+const MONGOLIAN = /[\u1800-\u18AF]/;
+// Mongolian block, plus NNBSP, ZWJ/ZWNJ and spaces (a space becomes NNBSP).
+const SCRIPT_ONLY = /^[\u1800-\u18AF\u202F\u200C\u200D ]+$/;
+
+/** Accept either romanization or pasted traditional script. */
+export function inputToScript(input) {
+  const text = input.trim();
+  if (!MONGOLIAN.test(text)) return romanToScript(text);
+  if (!SCRIPT_ONLY.test(text)) throw new Error('mixes traditional script with other characters');
+  return text.replace(/ +/g, '\u202F');
+}
+
+/** Romanization for display; empty when the script cannot be romanized. */
+export function scriptToRoman(script) {
+  try {
+    return fromScript(script);
+  } catch {
+    return '';
+  }
+}
+
 async function readReviewed() {
   const text = await readFile(REVIEWED, 'utf8').catch(() => '');
   const latest = {};
   for (const line of text.split('\n')) {
     if (!line.trim()) continue;
     const entry = JSON.parse(line);
-    latest[entry.word] = entry;
+    // A skip is "not now", never a verdict: it must not erase a decision.
+    if (entry.status === 'skipped' && latest[entry.word] && latest[entry.word].status !== 'skipped') continue;
+    // Entries saved before `latin` was recorded get it on read.
+    latest[entry.word] = { ...entry, latin: entry.latin ?? (entry.script ? scriptToRoman(entry.script) : '') };
   }
   return latest;
 }
@@ -75,7 +100,8 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.pathname === '/api/script') {
       try {
-        return json(res, 200, { script: romanToScript(url.searchParams.get('latin') ?? '') });
+        const script = inputToScript(url.searchParams.get('latin') ?? '');
+        return json(res, 200, { script, latin: scriptToRoman(script) });
       } catch (error) {
         return json(res, 200, { error: error.message });
       }
@@ -88,7 +114,14 @@ const server = createServer(async (req, res) => {
       if ((status === 'accepted' || status === 'corrected') && !script) {
         return json(res, 400, { error: 'accepted and corrected entries need a script form' });
       }
-      const entry = { word, script, status, reviewer: String(reviewer).slice(0, 60), at: new Date().toISOString() };
+      const entry = {
+        word,
+        script,
+        latin: script ? scriptToRoman(script) : '',
+        status,
+        reviewer: String(reviewer).slice(0, 60),
+        at: new Date().toISOString(),
+      };
       await appendFile(REVIEWED, `${JSON.stringify(entry)}\n`, 'utf8');
       return json(res, 200, entry);
     }

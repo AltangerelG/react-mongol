@@ -59,6 +59,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .latin { font-family: ui-monospace, Consolas, monospace; }
 .tag { font-size: 11px; border-radius: 4px; padding: 0 6px; align-self: flex-start; }
 .tag.dict { background: var(--accent-soft); color: var(--accent); }
+.tag.saved { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
 .tag.guess { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 .none { color: var(--muted); font-size: 14px; padding: 8px 0; }
 
@@ -149,6 +150,15 @@ const words = state.words;
 const byWord = new Map(words.map((w) => [w.word, w]));
 const reviewed = state.reviewed; // word -> latest entry
 const DONE = new Set(['accepted', 'corrected']);
+const KEEP = new Set(['accepted', 'corrected', 'unsure']);
+
+/** Drafts for a word, with the reviewer's saved spelling first when there is one. */
+function draftsFor(entry) {
+  const prior = reviewed[entry.word];
+  if (!prior || !KEEP.has(prior.status) || !prior.script) return entry.drafts;
+  const saved = { script: prior.script, latin: prior.latin ?? '', source: 'saved', guessed: false };
+  return [saved, ...entry.drafts.filter((d) => d.script !== prior.script)];
+}
 const SOURCES = { 'wmk-import': 'khudam dictionary', wiktionary: 'Wiktionary', 'suffix-rule': 'stem + suffix rule' };
 
 let current = null;
@@ -223,7 +233,7 @@ function renderCard() {
     return;
   }
   const prior = reviewed[current.word];
-  const drafts = current.drafts;
+  const drafts = draftsFor(current);
   selected = 0;
   card.innerHTML = `
     <div class="meta"><span>#${fmt(current.rank)}</span><span>${fmt(current.count)} uses in Wikipedia</span></div>
@@ -237,16 +247,16 @@ function renderCard() {
           <span class="script">${escapeHtml(d.script)}</span>
           <span class="info">
             <span class="latin">${escapeHtml(d.latin || '?')}</span>
-            <span class="tag ${d.guessed ? 'guess' : 'dict'}">${d.guessed ? 'letter guess' : SOURCES[d.source] ?? d.source}</span>
+            <span class="tag ${d.source === 'saved' ? 'saved' : d.guessed ? 'guess' : 'dict'}">${d.source === 'saved' ? `your saved version (${prior.status})` : d.guessed ? 'letter guess' : SOURCES[d.source] ?? d.source}</span>
           </span>
         </button>`).join('') : '<div class="none">No draft. Type the spelling below.</div>'}
     </div>
     <div class="editor">
       <div class="left">
-        <label for="latin">Correction, in romanization</label>
-        <input id="latin" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. aguljal-a" value="${escapeHtml(drafts[0]?.latin ?? '')}">
+        <label for="latin">Correction: romanization, or paste traditional script</label>
+        <input id="latin" type="text" autocomplete="off" spellcheck="false" placeholder="aguljal-a, or paste ᠠᠭᠤᠯᠵᠠᠯ᠎ᠠ" value="${escapeHtml(drafts[0]?.latin || drafts[0]?.script || '')}">
         <div class="letters">${['γ', 'ǰ', 'č', 'š', 'ö', 'ü', '-'].map((l) => `<button type="button" data-letter="${l}">${l}</button>`).join('')}</div>
-        <div class="hint">Plain ASCII works: g j ch sh ng kh. Type o: for ö, u: for ü. A space before a suffix becomes NNBSP; "-" is MVS (qar-a). Enter saves.</div>
+        <div class="hint">Plain ASCII works: g j ch sh ng kh. Type o: for ö, u: for ü. A space before a suffix becomes NNBSP; "-" is MVS (qar-a). Pasted ᠮᠣᠩᠭᠣᠯ text is used as-is. Enter saves.</div>
       </div>
       <div class="preview" id="preview" aria-label="Preview"></div>
     </div>
@@ -308,6 +318,14 @@ async function saveCorrection() {
 
 async function decide(status, script) {
   if (!current) return;
+  // Keeping a saved correction keeps it a correction.
+  const prior = reviewed[current.word];
+  if (status === 'accepted' && prior?.status === 'corrected' && prior.script === script) status = 'corrected';
+  // Skipping a word that already has a decision just moves on; it never erases it.
+  if (status === 'skipped' && prior && prior.status !== 'skipped') {
+    current = nextWord();
+    return render();
+  }
   const reviewer = $('reviewer').value.trim();
   const res = await fetch('/api/review', {
     method: 'POST',
@@ -336,6 +354,8 @@ function back() {
 
 const recent = [];
 function addRecent(entry) {
+  const at = recent.findIndex((r) => r.word === entry.word);
+  if (at >= 0) recent.splice(at, 1);
   recent.unshift(entry);
   recent.length = Math.min(recent.length, 10);
 }
@@ -363,7 +383,7 @@ function render() {
 
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey || !current) return;
-  const drafts = current.drafts;
+  const drafts = draftsFor(current);
   if (e.key === 'Enter') { e.preventDefault(); drafts.length ? decide('accepted', drafts[0].script) : $('latin').focus(); }
   else if (/^[1-9]$/.test(e.key) && drafts[Number(e.key) - 1]) { e.preventDefault(); decide('accepted', drafts[Number(e.key) - 1].script); }
   else if (e.key === 'e' || e.key === 'E') { e.preventDefault(); const i = $('latin'); i.focus(); i.select(); }
