@@ -49,3 +49,22 @@ export {
   isMongolianPunctuation,
 } from './unicode.js';
 export type { CodeRange } from './unicode.js';
+
+export { convertCyrillic, createConverter, loadConverter, normalizeDictionary } from './convert.js';
+export type {
+  ConverterOptions,
+  CyrillicConverter,
+  MongolDictionary,
+  MongolDictionaryFile,
+  WordConverter,
+} from './convert.js';
+
+export { applyMongolScript } from './dom.js';
+export type { MongolScriptOptions, VerticalMode } from './dom.js';
+
+export { MongolToggle, useMongolScript } from './MongolToggle.js';
+export type {
+  MongolScriptHookOptions,
+  MongolScriptState,
+  MongolToggleProps,
+} from './MongolToggle.js';

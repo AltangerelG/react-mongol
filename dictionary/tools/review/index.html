@@ -99,7 +99,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <body>
 <main>
   <header>
-    <h1>Толь шалгах <span>· Dictionary review</span></h1>
+    <h1><span id="title">Толь шалгах</span> <span id="subtitle">· Dictionary review</span></h1>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
       <label class="inline">Reviewer <input type="text" id="reviewer" size="12" placeholder="your name"></label>
       <label class="inline">Finish line
@@ -123,7 +123,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <div class="stats">
       <span>Real text covered: <b id="coverage">0%</b></span>
       <span>Needs second look: <b id="unsure">0</b></span>
-      <span>Not a word: <b id="rejected">0</b></span>
+      <span><span class="reject-label">Not a word</span>: <b id="rejected">0</b></span>
       <span>This session: <b id="session">0</b> words · <b id="rate">–</b>/hour</span>
       <span>To finish line: <b id="eta">–</b></span>
     </div>
@@ -136,7 +136,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <span><span class="key">1</span>–<span class="key">9</span> pick a draft</span>
     <span><span class="key">E</span> type a correction</span>
     <span><span class="key">U</span> unsure</span>
-    <span><span class="key">X</span> not a word</span>
+    <span><span class="key">X</span> <span class="reject-label">not a word</span></span>
     <span><span class="key">S</span> skip</span>
     <span><span class="key">←</span> back</span>
     <span><span class="key">C</span> copy the word</span>
@@ -155,6 +155,10 @@ const store = {
 
 const state = await (await fetch('/api/state')).json();
 const words = state.words;
+const labels = { title: 'Толь шалгах', subtitle: 'Dictionary review', uses: 'uses', reject: 'Not a word', ...state.labels };
+$('title').textContent = labels.title;
+$('subtitle').textContent = `· ${labels.subtitle}`;
+document.querySelectorAll('.reject-label').forEach((el) => { el.textContent = el.closest('.legend') ? labels.reject.toLowerCase() : labels.reject; });
 const byWord = new Map(words.map((w) => [w.word, w]));
 const reviewed = state.reviewed; // word -> latest entry
 const DONE = new Set(['accepted', 'corrected']);
@@ -257,7 +261,7 @@ function renderCard() {
   const drafts = draftsFor(current);
   selected = 0;
   card.innerHTML = `
-    <div class="meta"><span>#${fmt(current.rank)}</span><span>${fmt(current.count)} uses in Wikipedia</span></div>
+    <div class="meta"><span>#${fmt(current.rank)}</span><span>${fmt(current.count)} ${escapeHtml(labels.uses)}</span></div>
     <div class="word">${escapeHtml(current.word)}</div>
     <div class="example">${highlight(current.example, current.word)}</div>
     ${prior ? `<div class="prior">Already reviewed: ${prior.status}${prior.script ? ` · <span style="font-family:var(--mongol)">${escapeHtml(prior.script)}</span>` : ''}${prior.reviewer ? ` by ${escapeHtml(prior.reviewer)}` : ''}</div>` : ''}
@@ -289,7 +293,7 @@ function renderCard() {
       <button class="primary" id="accept">Accept ${drafts.length ? '1' : ''} <span class="key">Enter</span></button>
       <button id="save">Save correction</button>
       <button id="unsureBtn">Unsure <span class="key">U</span></button>
-      <button id="reject">Not a word <span class="key">X</span></button>
+      <button id="reject">${escapeHtml(labels.reject)} <span class="key">X</span></button>
       <button id="skip">Skip <span class="key">S</span></button>
       <button id="back">Back <span class="key">←</span></button>
     </div>`;

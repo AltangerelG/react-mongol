@@ -1,7 +1,7 @@
 {
   "name": "react-mongol",
-  "version": "0.1.0",
-  "description": "React components and primitives for traditional Mongolian script (Mongol bichig): vertical writing-mode layout, mixed-script run handling, and Unicode-correct text utilities.",
+  "version": "0.2.0",
+  "description": "Show Cyrillic Mongolian websites in traditional script (Mongol bichig) with one toggle; React primitives for vertical layout, mixed-script orientation and Unicode-correct text.",
   "keywords": [
     "react",
     "mongolian",
@@ -12,9 +12,11 @@
     "unicode",
     "i18n",
     "mvs",
-    "fvs"
+    "fvs",
+    "cyrillic",
+    "transliteration"
   ],
-  "license": "MIT",
+  "license": "(MIT AND CC-BY-SA-4.0)",
   "author": "Altangerel",
   "repository": {
     "type": "git",
@@ -40,7 +42,12 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "bin",
+    "dictionary/tools/review",
+    "dictionary/tools/drafts-lib.mjs",
+    "dictionary/LICENSE",
+    "dictionary/NOTICE"
   ],
   "scripts": {
     "build": "tsup",
@@ -49,19 +56,18 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm run test && npm run build",
-    "review": "node dictionary/tools/review/server.mjs"
+    "review": "node dictionary/tools/review/server.mjs",
+    "dictionary": "node dictionary/tools/build-dictionary.mjs"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@fontsource/noto-sans-mongolian": "^5.3.0",
-    "@gege-mn/mongol-bichig": "^0.2.2",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "jsdom": "^26.0.0",
-    "khudam": "^0.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tsup": "^8.3.5",
@@ -70,5 +76,14 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "dependencies": {
+    "@gege-mn/mongol-bichig": "^0.2.2",
+    "khudam": "^0.2.0"
+  },
+  "bin": {
+    "react-mongol": "bin/react-mongol.mjs"
+  },
+  "unpkg": "dist/mongol.global.js",
+  "jsdelivr": "dist/mongol.global.js"
 }

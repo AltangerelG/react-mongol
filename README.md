@@ -1,7 +1,8 @@
 # react-mongol
 
-React primitives for traditional Mongolian script (ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ, *Mongol bichig*):
-vertical layout, mixed-script orientation, and Unicode-correct text utilities.
+Show any Cyrillic Mongolian website in traditional script (ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ,
+*Mongol bichig*) with one toggle, plus React primitives for vertical layout,
+mixed-script orientation and Unicode-correct text.
 
 [![CI](https://github.com/AltangerelG/react-mongol/actions/workflows/ci.yml/badge.svg)](https://github.com/AltangerelG/react-mongol/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/react-mongol.svg)](https://www.npmjs.com/package/react-mongol)
@@ -10,8 +11,74 @@ vertical layout, mixed-script orientation, and Unicode-correct text utilities.
 npm install react-mongol
 ```
 
-Zero runtime dependencies. Ships ESM **and** CJS, so it works in Vite, Next.js
-and older Create React App builds alike. React 18 and 19.
+Ships ESM **and** CJS, so it works in Vite, Next.js and older Create React App
+builds alike. React 18 and 19. Not using React? See [Any website](#any-website-one-script-tag).
+
+## Cyrillic ↔ traditional script toggle
+
+```tsx
+import { MongolToggle } from 'react-mongol';
+
+<MongolToggle />   // a ᠮᠣᠩᠭᠣᠯ / Кирилл button for the whole page
+```
+
+Pressing it converts every Cyrillic word on the page to traditional script and
+turns the reading area vertical; pressing again restores the page exactly. The
+converter (about 340 KB gzipped) loads on the first press, so pages that never
+switch never download it. The reader's choice is remembered.
+
+- **What turns vertical:** elements marked `data-mongol-vertical`, or else the
+  page's `main` / `article`. Menus stay horizontal so the site keeps working.
+  `vertical="page"` makes the whole body vertical; `vertical="none"` only
+  converts the script.
+- **What is never touched:** code, `pre`, form field values, `translate="no"`,
+  and anything marked `data-mongol-skip`. Placeholders, titles and
+  `aria-label`s are converted.
+- **Text that changes later** (re-renders, loaded content) is converted as it
+  appears.
+- `useMongolScript()` gives you `{ enabled, loading, toggle }` for your own
+  button; `applyMongolScript(convert, options)` does the same without React.
+
+**Conversion is automatic and some words will be wrong.** Each site corrects
+its own words with a dictionary file, below, and human-reviewed words from the
+[open dictionary](dictionary/README.md) ship with the package.
+
+### Any website: one script tag
+
+WordPress, PHP, plain HTML:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/react-mongol/dist/mongol.global.js" defer></script>
+```
+
+A floating ᠮᠣᠩᠭᠣᠯ button appears (2.9 KB until it is pressed). Options, as
+attributes on the tag: `data-dictionary="/mongol-dictionary.json"`,
+`data-vertical="auto|page|none"`, `data-button="bottom-right|bottom-left|top-right|top-left|none"`,
+`data-root="#content"`. Script control: `window.ReactMongol.toggle()`.
+
+### Your site's dictionary
+
+```bash
+npx react-mongol extract ./src     # collect and convert every Cyrillic word → mongol-dictionary.json
+npx react-mongol review            # correct them in the browser, one word at a time
+```
+
+`extract` scans your source (HTML, JSX/TSX, Vue, Svelte, PHP, Markdown, JSON)
+and writes each word with its automatic conversion, most used first. Re-run it
+as your site grows: it adds new words and never overwrites a reviewed one.
+`review` opens a page with the word in context, machine drafts in vertical
+script, an on-screen script keyboard and a progress bar; your decisions are
+saved into the file. "Keep Cyrillic" leaves a word as it is (brand names,
+foreign words). Only reviewed entries are used:
+
+```tsx
+import dictionary from './mongol-dictionary.json';
+<MongolToggle dictionary={dictionary} />
+```
+
+or `data-dictionary="/mongol-dictionary.json"` on the script tag. A plain
+`{ "word": "ᠮᠣᠩᠭᠣᠯ" }` map works too. To convert strings yourself:
+`await convertCyrillic('Сайн байна уу')`, or `loadConverter()` once for many.
 
 ## What this is for
 
@@ -173,18 +240,16 @@ at their Unicode code points, so naming them would produce tofu for correct text
 Convert explicitly with [`mongol-code`](https://www.npmjs.com/package/mongol-code)
 if you need to target them.
 
-## Cyrillic → traditional script
+## How conversion works
 
-Out of scope here, and deliberately not bundled — transliteration is a
-dictionary-and-grammar problem that deserves its own release cycle. Pair with:
+1. Your site's dictionary (reviewed entries only).
+2. The bundled open dictionary: human-reviewed words, CC BY-SA 4.0.
+3. [`khudam`](https://github.com/bigune/khudam): a 28k-word lexicon (CC BY-SA 4.0)
+   with suffix rules, falling back to letter-by-letter rules.
 
-- [`@gege-mn/gege-converter`](https://github.com/gege-mn/gege-converter) — rules
-  engine, returns a plain string, actively maintained.
-- [`khudam`](https://www.npmjs.com/package/khudam) — 28k-entry lexicon, returns
-  ranked candidates.
-
-Note that the two disagree on some spellings (`Монгол` → `ᠮᠣᠩᠭᠤᠯ` vs `ᠮᠣᠩᠭᠣᠯ`);
-test against your own vocabulary.
+Suffix boundaries are written with NNBSP (U+202F) as Unicode specifies, and
+`,` `.` `:` after a word become ᠂ ᠃ ᠄. Automatic conversion is a draft; that is
+what the dictionaries are for.
 
 ## Browser support
 
@@ -207,6 +272,7 @@ go vertical in some browsers unless its height is set explicitly.
 
 Not yet implemented, roughly in order of how much they are missed:
 
+- A browser extension: the same toggle on any Mongolian site.
 - A browser-level layout test. Unit tests run in jsdom, which does no text
   layout, so a font that collapses upright runs (see Fonts) would pass them.
 - UAX-14 line breaking for Mongolian.
@@ -223,4 +289,7 @@ the Flutter package that worked out what vertical Mongolian text actually needs.
 
 ## License
 
-MIT
+Code: MIT. The bundled dictionary data (the open dictionary and khudam's
+lexicon) is CC BY-SA 4.0; see [dictionary/NOTICE](dictionary/NOTICE). Using
+the package on your site is fine under both; if you redistribute modified
+dictionary data, it stays CC BY-SA.

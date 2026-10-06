@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мэдээ — react-mongol script tag demo</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg: #ffffff; --fg: #1b1b1a; --muted: #5f5e58; --line: #e4e2dc; --accent: #a3262a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151514; --fg: #ecebe6; --muted: #a09f98; --line: #33332f; --accent: #f08a80; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 Georgia, 'Times New Roman', serif; }
+  header { border-bottom: 3px solid var(--accent); padding: 12px 16px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+  header strong { font-size: 24px; color: var(--accent); }
+  nav { display: flex; gap: 16px; flex-wrap: wrap; font: 15px system-ui, sans-serif; }
+  nav a { color: var(--fg); text-decoration: none; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 32px; }
+  @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } }
+  h1 { font-size: 28px; line-height: 1.25; margin: 8px 0; }
+  .meta { color: var(--muted); font: 14px system-ui, sans-serif; }
+  aside { border-left: 1px solid var(--line); padding-left: 16px; font: 15px/1.5 system-ui, sans-serif; }
+  aside li { margin-bottom: 8px; }
+  input { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+  footer { border-top: 1px solid var(--line); padding: 16px; color: var(--muted); font: 14px system-ui, sans-serif; }
+</style>
+</head>
+<body>
+  <header>
+    <strong>Өдрийн мэдээ</strong>
+    <nav aria-label="Үндсэн цэс">
+      <a href="#">Нүүр</a><a href="#">Улс төр</a><a href="#">Эдийн засаг</a><a href="#">Спорт</a><a href="#">Соёл</a>
+    </nav>
+    <input type="search" placeholder="Хайх" aria-label="Хайх">
+  </header>
+
+  <div class="wrap">
+    <main>
+      <article>
+        <h1>Монгол бичгийн өдөр Улаанбаатар хотод болов</h1>
+        <p class="meta">2026 оны 10 сарын 6 · Соёлын мэдээ</p>
+        <p>Өнөөдөр Улаанбаатар хотын төв талбайд монгол бичгийн өдрийг тэмдэглэн өнгөрүүллээ. Арга хэмжээнд олон мянган хүн оролцож, сурагчид уран бичлэгийн үзэсгэлэн гаргасан байна.</p>
+        <p>Зохион байгуулагчдын хэлснээр энэ жил анх удаа олон сургуулийн хүүхдүүд хамтран оролцсон юм. Тэд монгол бичгээр шүлэг уншиж, дуу дуулжээ.</p>
+        <p>Хотын захиргаа ирэх онд энэ арга хэмжээг дахин зохион байгуулахаар төлөвлөж байгаа бөгөөд илүү олон аймгаас оролцогч ирнэ гэж мэдэгдэв.</p>
+      </article>
+    </main>
+    <aside>
+      <h2>Их уншсан</h2>
+      <ol>
+        <li><a href="#">Цаг агаарын мэдээ: маргааш дулаан байна</a></li>
+        <li><a href="#">Шинэ сургууль нээгдлээ</a></li>
+        <li><a href="#">Хөл бөмбөгийн тэмцээн эхэллээ</a></li>
+      </ol>
+    </aside>
+  </div>
+
+  <footer>© 2026 Өдрийн мэдээ. Бүх эрх хуулиар хамгаалагдсан.</footer>
+
+  <script src="../../dist/mongol.global.js" defer></script>
+</body>
+</html>

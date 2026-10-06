@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   MVS,
   Mongol,
   MongolText,
+  MongolToggle,
   NNBSP,
   splitRuns,
   tateChuYoko,
@@ -91,6 +92,22 @@ function Playground() {
   );
 }
 
+function ToggleDemo() {
+  const root = useRef(null);
+  return (
+    <div className="toggle-demo">
+      <MongolToggle root={root} persist={false} className="toggle" />
+      <div ref={root}>
+        <h3>Монгол бичгийн өдөр</h3>
+        <article data-mongol-vertical className="news">
+          <p>Өнөөдөр Улаанбаатар хотод монгол бичгийн өдрийг тэмдэглэлээ. Олон мянган хүн оролцож, сурагчид уран бичлэгийн үзэсгэлэн гаргасан байна.</p>
+          <p>Ирэх онд энэ арга хэмжээг дахин зохион байгуулна.</p>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   return (
     <main>
@@ -102,6 +119,16 @@ export function App() {
           <FontStatus />
         </div>
       </header>
+
+      <section>
+        <h2>Cyrillic → traditional script</h2>
+        <p>
+          <code>&lt;MongolToggle&gt;</code> converts Cyrillic text in place and turns marked regions vertical. The
+          converter loads on the first click. Automatic conversion is a draft: sites correct words with a
+          dictionary file (<code>npx react-mongol extract</code>, then <code>review</code>).
+        </p>
+        <ToggleDemo />
+      </section>
 
       <section>
         <h2>Mixed-script orientation</h2>
