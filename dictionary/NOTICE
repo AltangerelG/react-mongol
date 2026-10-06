@@ -1,0 +1,18 @@
+Open Mongolian script dictionary
+Copyright (c) 2026 react-mongol contributors
+Licensed under CC BY-SA 4.0 (LICENSE in this folder). The code in
+dictionary/tools is MIT, like the rest of this repository.
+
+This folder includes material from:
+
+- Mongolian Wikipedia (https://mn.wikipedia.org), CC BY-SA 4.0.
+  Word frequencies and the example sentences in data/queue.json are taken
+  from the mnwiki pages-articles dump. (c) Wikipedia contributors.
+
+- khudam (https://github.com/bigune/khudam), lexicon CC BY-SA 4.0, code MIT.
+  The machine drafts in data/queue.json come from its lexicon, which
+  includes data (c) sura0111 / writtenMongolianKeyboard contributors (MIT)
+  and (c) Wiktionary contributors (CC BY-SA 4.0) via kaikki.org/wiktextract.
+
+Reviewed spellings in data/reviewed.jsonl are the work of their reviewers,
+named in each entry, and are released under CC BY-SA 4.0.
