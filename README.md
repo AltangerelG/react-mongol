@@ -27,10 +27,16 @@ turns the reading area vertical; pressing again restores the page exactly. The
 converter (about 340 KB gzipped) loads on the first press, so pages that never
 switch never download it. The reader's choice is remembered.
 
-- **What turns vertical:** elements marked `data-mongol-vertical`, or else the
-  page's `main` / `article`. Menus stay horizontal so the site keeps working.
-  `vertical="page"` makes the whole body vertical; `vertical="none"` only
+- **What turns vertical:** the whole page, the way Mongol bichig is laid out:
+  every line runs top to bottom, the header becomes the leftmost column and the
+  footer the rightmost, and the page scrolls sideways (the mouse wheel too).
+  Build the layout with logical properties (`inline-size`, `margin-block`,
+  flex/grid) and it rotates with the text; fixed pixel widths do not.
+  `vertical="auto"` turns only the reading area vertical (elements marked
+  `data-mongol-vertical`, or `main` / `article`); `vertical="none"` only
   converts the script.
+- **Numbers** become Mongolian digits (2026 → ᠒᠐᠒᠖); `digits={false}` keeps
+  them as they are.
 - **What is never touched:** code, `pre`, form field values, `translate="no"`,
   and anything marked `data-mongol-skip`. Placeholders, titles and
   `aria-label`s are converted.
@@ -53,7 +59,7 @@ WordPress, PHP, plain HTML:
 
 A floating ᠮᠣᠩᠭᠣᠯ button appears (2.9 KB until it is pressed). Options, as
 attributes on the tag: `data-dictionary="/mongol-dictionary.json"`,
-`data-vertical="auto|page|none"`, `data-button="bottom-right|bottom-left|top-right|top-left|none"`,
+`data-vertical="page|auto|none"`, `data-button="bottom-right|bottom-left|top-right|top-left|none"`,
 `data-root="#content"`. Script control: `window.ReactMongol.toggle()`.
 
 ### Browser extension

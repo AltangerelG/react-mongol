@@ -14,7 +14,12 @@ const engine: WordConverter = {
 describe('createConverter', () => {
   it('converts Cyrillic words and leaves everything else alone', () => {
     const convert = createConverter(engine);
-    expect(convert('Монгол 2026, React!')).toBe('<Монгол> 2026, React!');
+    expect(convert('Монгол, React!')).toBe('<Монгол>, React!');
+  });
+
+  it('writes digits as Mongolian digits, unless turned off', () => {
+    expect(createConverter(engine)('2026 он')).toBe('᠒᠐᠒᠖ <он>');
+    expect(createConverter(engine, [], { digits: false })('2026 он')).toBe('2026 <он>');
   });
 
   it('prefers dictionaries in order, matching case-insensitively', () => {
@@ -32,7 +37,8 @@ describe('createConverter', () => {
   it('turns punctuation after a converted word into Mongolian punctuation, not decimals', () => {
     const convert = createConverter(engine, [{ сайн: 'ᠰᠠᠢᠨ' }]);
     expect(convert('сайн, сайн.')).toBe('ᠰᠠᠢᠨ᠂ ᠰᠠᠢᠨ᠃');
-    expect(convert('1.5, 2.')).toBe('1.5, 2.');
+    expect(createConverter(engine, [], { digits: false })('1.5, 2.')).toBe('1.5, 2.');
+    expect(convert('1.5')).toBe('᠑.᠕');
   });
 });
 
@@ -72,8 +78,23 @@ describe('applyMongolScript', () => {
     expect(document.getElementById('react-mongol-script-style')).toBeNull();
   });
 
-  it('makes main vertical by default, and keeps navigation horizontal', () => {
+  it('turns the whole page vertical by default, and back', () => {
     const restore = applyMongolScript(convert);
+    expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(true);
+    expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
+    restore();
+    expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(false);
+  });
+
+  it('keeps the page horizontal when converting only a subtree', () => {
+    const restore = applyMongolScript(convert, { root: document.querySelector('main')! });
+    expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(false);
+    expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
+    restore();
+  });
+
+  it('with vertical: auto, makes main vertical and keeps navigation horizontal', () => {
+    const restore = applyMongolScript(convert, { vertical: 'auto' });
     expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(true);
     expect(document.querySelector('nav')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
     restore();
@@ -91,7 +112,7 @@ describe('applyMongolScript', () => {
   it('uses explicit regions when given', () => {
     const aside = document.createElement('aside');
     document.body.append(aside);
-    const restore = applyMongolScript(convert, { regions: [aside] });
+    const restore = applyMongolScript(convert, { vertical: 'auto', regions: [aside] });
     expect(aside.hasAttribute('data-mongol-vertical-on')).toBe(true);
     expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
     restore();
@@ -99,7 +120,7 @@ describe('applyMongolScript', () => {
 
   it('prefers regions the site marks with data-mongol-vertical', () => {
     document.querySelector('nav')!.setAttribute('data-mongol-vertical', '');
-    const restore = applyMongolScript(convert);
+    const restore = applyMongolScript(convert, { vertical: 'auto' });
     expect(document.querySelector('nav')!.hasAttribute('data-mongol-vertical-on')).toBe(true);
     expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
     restore();

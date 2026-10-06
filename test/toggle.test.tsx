@@ -20,12 +20,12 @@ describe('MongolToggle', () => {
     await waitFor(() => expect(screen.getByText(/ᠮᠣᠩᠭ/)).toBeTruthy(), { timeout: 10_000 });
     expect(button.getAttribute('aria-pressed')).toBe('true');
     expect(button.textContent).toBe('Кирилл'); // the button itself is never converted
-    expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(true);
+    expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(true);
     expect(window.localStorage.getItem('react-mongol:script')).toBe('on');
 
     await act(async () => fireEvent.click(button));
     expect(document.querySelector('main p')!.textContent).toBe('Монгол улс');
-    expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
+    expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(false);
   });
 
   it('applies a site dictionary over the automatic conversion', async () => {

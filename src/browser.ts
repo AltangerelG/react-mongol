@@ -4,7 +4,7 @@
 //
 // Adds a floating ᠮᠣᠩᠭᠣᠯ / Кирилл button. Configure with data- attributes on
 // the script tag:
-//   data-vertical="auto|page|none"   where text turns vertical (default auto)
+//   data-vertical="page|auto|none"   whole page vertical (default), reading area only, or none
 //   data-dictionary="/mongol-dictionary.json"   the site's corrections
 //   data-button="bottom-right|bottom-left|top-right|top-left|none"
 //   data-root="#content"             convert only this element
@@ -75,7 +75,7 @@ async function enable(): Promise<void> {
     const root = config['root'] ? document.querySelector(config['root']) : null;
     restore = applyMongolScript(convert, {
       ...(root ? { root } : {}),
-      vertical: (config['vertical'] as VerticalMode | undefined) ?? 'auto',
+      vertical: (config['vertical'] as VerticalMode | undefined) ?? 'page',
     });
     remember(true);
   } catch (error) {
@@ -112,6 +112,7 @@ function mountButton(): void {
   button.setAttribute('data-mongol-skip', '');
   button.style.cssText = [
     'position:fixed',
+    'writing-mode:horizontal-tb',
     `${y === 'top' ? 'top' : 'bottom'}:16px`,
     `${x === 'left' ? 'left' : 'right'}:16px`,
     'z-index:2147483647',

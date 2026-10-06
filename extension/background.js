@@ -15,6 +15,7 @@ function css() {
   unicode-range: U+1800-18AF, U+202F;
 }
 [data-mongol-text] { font-family: ${FONT_FAMILY} !important; }
+html[data-mongol-page] { writing-mode: vertical-lr !important; text-orientation: mixed !important; }
 [data-mongol-vertical-on] {
   writing-mode: vertical-lr !important;
   text-orientation: mixed !important;

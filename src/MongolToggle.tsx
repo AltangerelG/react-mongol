@@ -66,12 +66,13 @@ export function useMongolScript(options: MongolScriptHookOptions = {}): MongolSc
     if (!enabled) return;
     let restore: (() => void) | null = null;
     let cancelled = false;
-    const { root, vertical, columnHeight, fontFamily, dictionary, reviewed } = latest.current;
+    const { root, vertical, columnHeight, fontFamily, dictionary, reviewed, digits } = latest.current;
     setLoading(true);
     setError(null);
     loadConverter({
       ...(dictionary ? { dictionary } : {}),
       ...(reviewed === undefined ? {} : { reviewed }),
+      ...(digits === undefined ? {} : { digits }),
     })
       .then((convert) => {
         if (cancelled) return;
@@ -138,6 +139,7 @@ export const MongolToggle = forwardRef<HTMLButtonElement, MongolToggleProps>(fun
     defaultEnabled,
     dictionary,
     reviewed,
+    digits,
     scriptLabel = SCRIPT_LABEL,
     cyrillicLabel = 'Кирилл',
     onScriptChange,
@@ -154,6 +156,7 @@ export const MongolToggle = forwardRef<HTMLButtonElement, MongolToggleProps>(fun
     ...(defaultEnabled === undefined ? {} : { defaultEnabled }),
     ...(dictionary ? { dictionary } : {}),
     ...(reviewed === undefined ? {} : { reviewed }),
+    ...(digits === undefined ? {} : { digits }),
   });
 
   return createElement(

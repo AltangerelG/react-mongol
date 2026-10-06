@@ -4,10 +4,14 @@ import { DEFAULT_MONGOLIAN_FONT_FAMILY } from './fonts.js';
 /**
  * Where the page turns vertical.
  *
- * - `'auto'`: elements marked `data-mongol-vertical`; if there are none, the
- *   page's `main` / `article` / `[role=main]`. Navigation and other chrome stay
- *   horizontal, so the site keeps working.
- * - `'page'`: the whole body. Faithful, but most layouts were not built for it.
+ * - `'page'` (default when converting the whole body): the whole page, the way Mongol bichig is laid out.
+ *   The root element turns vertical, so every line runs top to bottom and
+ *   blocks flow left to right: the header becomes the leftmost column, the
+ *   footer the rightmost, and the page scrolls sideways (the mouse wheel
+ *   scrolls it too).
+ * - `'auto'` (default when `root` is a subtree): only the reading area: elements marked `data-mongol-vertical`,
+ *   or else the page's `main` / `article` / `[role=main]`. Menus stay
+ *   horizontal.
  * - `'none'`: convert the script, keep the layout horizontal.
  */
 export type VerticalMode = 'auto' | 'page' | 'none';
@@ -25,7 +29,7 @@ export interface MongolScriptOptions {
   fontFamily?: string | null;
   /**
    * The elements to turn vertical, overriding the `vertical: 'auto'` search.
-   * Ignored when `vertical` is `'page'` or `'none'`.
+   * Used only with `vertical: 'auto'`.
    */
   regions?: Element[];
 }
@@ -37,7 +41,8 @@ const SKIP_SELECTOR =
 const ATTRIBUTE_SKIP_SELECTOR =
   'script, style, noscript, template, code, pre, kbd, samp, [contenteditable=""], [contenteditable="true"], [translate="no"], [data-mongol-skip]';
 const ATTRIBUTES = ['title', 'placeholder', 'aria-label', 'alt'] as const;
-const CYRILLIC = /[А-ЯЁӨҮа-яёөү]/;
+// Text worth converting: Cyrillic words, or digits (written as Mongolian digits).
+const CYRILLIC = /[А-ЯЁӨҮа-яёөү0-9]/;
 const STYLE_ID = 'react-mongol-script-style';
 
 interface Tracked {
@@ -124,20 +129,35 @@ export function applyMongolScript(
   html.setAttribute('lang', 'mn-Mong');
   html.setAttribute('data-mongol-script', '');
 
-  const vertical = options.vertical ?? 'auto';
-  const regions: Element[] =
-    vertical === 'page'
-      ? [doc.body]
-      : vertical === 'auto'
-        ? options.regions ?? findRegions(root)
-        : [];
+  // Converting only part of a page should not turn the whole page sideways.
+  const vertical = options.vertical ?? (root === doc.body ? 'page' : 'auto');
+  const regions: Element[] = vertical === 'auto' ? options.regions ?? findRegions(root) : [];
   for (const region of regions) region.setAttribute('data-mongol-vertical-on', '');
+  if (vertical === 'page') html.setAttribute('data-mongol-page', '');
+
+  // A sideways page needs the wheel to scroll sideways.
+  const wheel = (event: WheelEvent): void => {
+    const page = doc.scrollingElement ?? html;
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || event.ctrlKey) return;
+    if (page.scrollHeight > page.clientHeight + 1) return; // the page still scrolls vertically
+    for (let el = event.target as Element | null; el && el !== html; el = el.parentElement) {
+      if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) return;
+    }
+    page.scrollLeft += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+    event.preventDefault();
+  };
+  const view = doc.defaultView;
+  if (vertical === 'page') view?.addEventListener('wheel', wheel, { passive: false });
 
   const style = doc.createElement('style');
   style.id = STYLE_ID;
   const font = useFont ? `font-family: ${options.fontFamily ?? DEFAULT_MONGOLIAN_FONT_FAMILY};` : '';
   style.textContent = `
 ${useFont ? `[data-mongol-text] { ${font} }` : ''}
+html[data-mongol-page] {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+}
 [data-mongol-vertical-on] {
   writing-mode: vertical-lr;
   text-orientation: mixed;
@@ -179,6 +199,8 @@ ${useFont ? `[data-mongol-text] { ${font} }` : ''}
       }
     }
     for (const region of regions) region.removeAttribute('data-mongol-vertical-on');
+    html.removeAttribute('data-mongol-page');
+    view?.removeEventListener('wheel', wheel);
     for (const element of fonted) element.removeAttribute('data-mongol-text');
     style.remove();
     html.removeAttribute('data-mongol-script');

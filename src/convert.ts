@@ -28,6 +28,8 @@ export interface ConverterOptions {
    * Use the bundled, human-reviewed dictionary (CC BY-SA 4.0). Default `true`.
    */
   reviewed?: boolean;
+  /** Write 0-9 as Mongolian digits (U+1810..U+1819). Default `true`. */
+  digits?: boolean;
 }
 
 /** The part of khudam this module uses. */
@@ -74,17 +76,23 @@ function convertWord(word: string, dictionaries: MongolDictionary[], engine: Wor
 export function createConverter(
   engine: WordConverter,
   dictionaries: MongolDictionary[] = [],
+  options: { digits?: boolean } = {},
 ): CyrillicConverter {
   const cache = new Map<string, string>();
-  return (text) =>
-    text.replace(CYRILLIC_WORD, (word) => {
+  const digits = options.digits !== false;
+  return (text) => {
+    let out = text.replace(CYRILLIC_WORD, (word) => {
       let converted = cache.get(word);
       if (converted === undefined) {
         converted = convertWord(word, dictionaries, engine);
         cache.set(word, converted);
       }
       return converted;
-    }).replace(/([ᠠ-ᢪ᠋-᠏])([,.:])(?=\s|$)/g, (_, letter: string, mark: string) => letter + PUNCTUATION[mark]);
+    });
+    // 0-9 -> Mongolian digits U+1810..U+1819.
+    if (digits) out = out.replace(/[0-9]/g, (d) => String.fromCharCode(0x1810 + d.charCodeAt(0) - 48));
+    return out.replace(/([\u1820-\u18AA\u180B-\u180F])([,.:])(?=\s|$)/g, (_, letter: string, mark: string) => letter + PUNCTUATION[mark]);
+  };
 }
 
 let engine: Promise<WordConverter> | null = null;
@@ -106,7 +114,7 @@ export async function loadConverter(options: ConverterOptions = {}): Promise<Cyr
     bundled ??= import('./generated/reviewed.js').then((m) => m.REVIEWED);
     dictionaries.push(await bundled);
   }
-  return createConverter(await engine, dictionaries);
+  return createConverter(await engine, dictionaries, options.digits === false ? { digits: false } : {});
 }
 
 /**
