@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mongol Bichig: ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ",
-  "short_name": "Mongol Bichig",
+  "short_name": "ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ",
   "version": "0.2.0",
   "description": "Read any Cyrillic Mongolian page in traditional Mongolian script, vertically. One click on, one click back.",
   "homepage_url": "https://github.com/AltangerelG/react-mongol",
