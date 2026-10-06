@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Mongol Bichig: ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ",
+  "short_name": "Mongol Bichig",
+  "version": "0.2.0",
+  "description": "Read any Cyrillic Mongolian page in traditional Mongolian script, vertically. One click on, one click back.",
+  "homepage_url": "https://github.com/AltangerelG/react-mongol",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "Монгол бичгээр харах (show in Mongol bichig)",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "permissions": ["activeTab", "scripting"],
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/noto-sans-mongolian.woff2"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "mongol-bichig@react-mongol",
+      "strict_min_version": "121.0"
+    }
+  }
+}

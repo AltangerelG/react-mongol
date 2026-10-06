@@ -18,8 +18,16 @@ export interface MongolScriptOptions {
   vertical?: VerticalMode;
   /** Height of vertical regions, i.e. the length of a column. Default `70vh`. */
   columnHeight?: string;
-  /** Font for vertical regions. `null` leaves fonts alone. */
+  /**
+   * Font for converted text and vertical regions, so Mongolian renders on
+   * devices without a Mongolian system font. `null` leaves fonts alone.
+   */
   fontFamily?: string | null;
+  /**
+   * The elements to turn vertical, overriding the `vertical: 'auto'` search.
+   * Ignored when `vertical` is `'page'` or `'none'`.
+   */
+  regions?: Element[];
 }
 
 /** Never converted: code, form fields, and anything opted out. */
@@ -52,6 +60,8 @@ export function applyMongolScript(
   const doc = root.ownerDocument;
   const texts = new Map<Text, Tracked>();
   const attributes = new Map<Element, Map<string, Tracked>>();
+  const fonted = new Set<Element>();
+  const useFont = options.fontFamily !== null;
 
   const skipped = (node: Node): boolean => {
     const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
@@ -66,6 +76,11 @@ export function applyMongolScript(
     const converted = convert(original);
     texts.set(node, { original, converted });
     if (converted !== original) node.data = converted;
+    const parent = node.parentElement;
+    if (useFont && parent && !fonted.has(parent)) {
+      fonted.add(parent);
+      parent.setAttribute('data-mongol-text', '');
+    }
   };
 
   const convertAttributes = (element: Element): void => {
@@ -114,14 +129,15 @@ export function applyMongolScript(
     vertical === 'page'
       ? [doc.body]
       : vertical === 'auto'
-        ? findRegions(root)
+        ? options.regions ?? findRegions(root)
         : [];
   for (const region of regions) region.setAttribute('data-mongol-vertical-on', '');
 
   const style = doc.createElement('style');
   style.id = STYLE_ID;
-  const font = options.fontFamily === null ? '' : `font-family: ${options.fontFamily ?? DEFAULT_MONGOLIAN_FONT_FAMILY};`;
+  const font = useFont ? `font-family: ${options.fontFamily ?? DEFAULT_MONGOLIAN_FONT_FAMILY};` : '';
   style.textContent = `
+${useFont ? `[data-mongol-text] { ${font} }` : ''}
 [data-mongol-vertical-on] {
   writing-mode: vertical-lr;
   text-orientation: mixed;
@@ -163,6 +179,7 @@ export function applyMongolScript(
       }
     }
     for (const region of regions) region.removeAttribute('data-mongol-vertical-on');
+    for (const element of fonted) element.removeAttribute('data-mongol-text');
     style.remove();
     html.removeAttribute('data-mongol-script');
     if (previousLang === null) html.removeAttribute('lang');

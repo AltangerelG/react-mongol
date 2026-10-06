@@ -57,7 +57,8 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm run test && npm run build",
     "review": "node dictionary/tools/review/server.mjs",
-    "dictionary": "node dictionary/tools/build-dictionary.mjs"
+    "dictionary": "node dictionary/tools/build-dictionary.mjs",
+    "extension": "npm run dictionary && node extension/build.mjs"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"

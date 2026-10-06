@@ -80,6 +80,23 @@ describe('applyMongolScript', () => {
     expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
   });
 
+  it('applies the font to converted text and removes it on restore', () => {
+    const restore = applyMongolScript(convert, { vertical: 'none' });
+    expect(document.querySelector('main p')!.hasAttribute('data-mongol-text')).toBe(true);
+    expect(document.querySelector('code')!.hasAttribute('data-mongol-text')).toBe(false);
+    restore();
+    expect(document.querySelectorAll('[data-mongol-text]')).toHaveLength(0);
+  });
+
+  it('uses explicit regions when given', () => {
+    const aside = document.createElement('aside');
+    document.body.append(aside);
+    const restore = applyMongolScript(convert, { regions: [aside] });
+    expect(aside.hasAttribute('data-mongol-vertical-on')).toBe(true);
+    expect(document.querySelector('main')!.hasAttribute('data-mongol-vertical-on')).toBe(false);
+    restore();
+  });
+
   it('prefers regions the site marks with data-mongol-vertical', () => {
     document.querySelector('nav')!.setAttribute('data-mongol-vertical', '');
     const restore = applyMongolScript(convert);

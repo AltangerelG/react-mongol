@@ -56,6 +56,12 @@ attributes on the tag: `data-dictionary="/mongol-dictionary.json"`,
 `data-vertical="auto|page|none"`, `data-button="bottom-right|bottom-left|top-right|top-left|none"`,
 `data-root="#content"`. Script control: `window.ReactMongol.toggle()`.
 
+### Browser extension
+
+For readers rather than site owners: [`extension/`](extension/README.md) puts the
+same toggle on any Mongolian site, with a Mongolian font bundled. Chrome, Edge
+and Firefox.
+
 ### Your site's dictionary
 
 ```bash
@@ -272,7 +278,6 @@ go vertical in some browsers unless its height is set explicitly.
 
 Not yet implemented, roughly in order of how much they are missed:
 
-- A browser extension: the same toggle on any Mongolian site.
 - A browser-level layout test. Unit tests run in jsdom, which does no text
   layout, so a font that collapses upright runs (see Fonts) would pass them.
 - UAX-14 line breaking for Mongolian.
