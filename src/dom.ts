@@ -158,6 +158,11 @@ html[data-mongol-page] {
   writing-mode: vertical-lr;
   text-orientation: mixed;
 }
+/* Site CSS that pins a block horizontal would leave its script lying on its
+   side with Latin upright; in page mode everything follows the page. */
+html[data-mongol-page] body *:not([data-mongol-skip], [data-mongol-skip] *) {
+  writing-mode: inherit !important;
+}
 [data-mongol-vertical-on] {
   writing-mode: vertical-lr;
   text-orientation: mixed;

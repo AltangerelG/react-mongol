@@ -1,8 +1,12 @@
 # Mongol Bichig browser extension
 
 Read any Cyrillic Mongolian web page in traditional Mongolian script
-(ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ). Click the toolbar button: the page's words convert and the
-article turns vertical. Click again: the page is back exactly as it was.
+(ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ), top to bottom, the way Mongol bichig is laid out.
+
+| Do | Get |
+| --- | --- |
+| Click the toolbar button, or `Alt+Shift+M` | **Whole page**: every word and number converts, the whole page turns vertical (header on the left, footer on the right), the mouse wheel scrolls sideways. Click again: the page is back exactly as it was. |
+| Right-click the button → *Reader view*, or `Alt+Shift+R` | **Reader view**: the page rebuilt as a clean vertical layout (site name and menu, then the article with its images, or the page's headlines, then the footer). For sites whose own design cannot rotate. `Esc` closes it. |
 
 It is the same engine as the `react-mongol` package (`applyMongolScript`),
 with the reviewed open dictionary and the khudam converter bundled, plus Noto
@@ -20,16 +24,16 @@ npm run extension        # builds extension/build/ and the store zip
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, choose **Load
   Temporary Add-on**, and pick `extension/build/manifest.json`.
 
-Then open a Mongolian news site and click the ᠮᠣ button. The badge shows `ON`.
+Then open a Mongolian news site and click the ᠮᠣ button. The badge shows `ON`
+(whole page) or `R` (reader view).
 
 ## How it behaves
 
-- Does nothing until you click it, and then only on that tab (`activeTab`).
+- Does nothing until you click it (or use its menu or shortcut), and then only on that tab (`activeTab`).
   No access to your browsing otherwise; no network requests; no data leaves
   the page.
-- The article (the block with the most paragraph text, or a site's `<article>`
-  / `<main>`, or anything marked `data-mongol-vertical`) turns vertical; menus
-  stay horizontal so the page keeps working.
+- Whole-page mode keeps each site's design; sites built with fixed pixel sizes
+  can look broken (gaps, overlaps). Use reader view on those.
 - Content that loads later is converted as it appears.
 - Conversion is automatic and some words will be wrong. Every word reviewed in
   the [open dictionary](../dictionary/README.md) improves it in the next release.
@@ -97,6 +101,7 @@ screenshots, and the 440×280 small promo tile.
 - **activeTab:** to read and change the page the user clicked the button on,
   only after that click.
 - **scripting:** to run the converter and add its styles on that page.
+- **contextMenus:** the button's right-click menu (whole page / reader view).
 - **Remote code:** none. All code and data ship in the package.
 - **Data collection:** none. The extension sends nothing anywhere and stores
   nothing.

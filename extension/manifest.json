@@ -20,19 +20,43 @@
   },
   "background": {
     "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
-  "permissions": ["activeTab", "scripting"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
   "web_accessible_resources": [
     {
-      "resources": ["fonts/noto-sans-mongolian.woff2"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "fonts/noto-sans-mongolian.woff2"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "browser_specific_settings": {
     "gecko": {
       "id": "mongol-bichig@react-mongol",
       "strict_min_version": "121.0"
+    }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+M"
+      },
+      "description": "Whole page in Mongol bichig"
+    },
+    "reader-view": {
+      "suggested_key": {
+        "default": "Alt+Shift+R"
+      },
+      "description": "Reader view in Mongol bichig"
     }
   }
 }
