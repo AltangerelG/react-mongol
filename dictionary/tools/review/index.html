@@ -69,6 +69,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .editor input { width: 100%; font: 18px ui-monospace, Consolas, monospace; padding: 8px 10px; }
 .letters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .letters button { min-width: 36px; font-family: ui-monospace, Consolas, monospace; }
+.keyboard { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.keyboard .k { min-width: 40px; min-height: 52px; padding: 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
+.keyboard .g { font-family: var(--mongol); font-size: 22px; line-height: 1.1; writing-mode: vertical-lr; height: 26px; }
+.keyboard .l { font: 11px ui-monospace, Consolas, monospace; color: var(--muted); }
+.keyboard .ctl { min-height: 32px; font: 11px ui-monospace, Consolas, monospace; color: var(--muted); }
+.editor input { font-family: ui-monospace, Consolas, monospace, var(--mongol); }
+.hint b { color: var(--fg); font-family: ui-monospace, Consolas, monospace; font-weight: 600; }
 .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
 .preview { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; min-width: 90px; min-height: 194px; display: flex; align-items: flex-start; }
 .preview .error { color: var(--bad); font-size: 13px; writing-mode: horizontal-tb; }
@@ -132,6 +139,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <span><span class="key">X</span> not a word</span>
     <span><span class="key">S</span> skip</span>
     <span><span class="key">←</span> back</span>
+    <span><span class="key">C</span> copy the word</span>
   </div>
 
   <section class="recent"><h2>Recent</h2><ol id="recent"></ol></section>
@@ -159,7 +167,20 @@ function draftsFor(entry) {
   const saved = { script: prior.script, latin: prior.latin ?? '', source: 'saved', guessed: false };
   return [saved, ...entry.drafts.filter((d) => d.script !== prior.script)];
 }
-const SOURCES = { 'wmk-import': 'khudam dictionary', wiktionary: 'Wiktionary', 'suffix-rule': 'stem + suffix rule' };
+const SOURCES = { 'wmk-import': 'khudam dictionary', wiktionary: 'Wiktionary', 'suffix-rule': 'stem + suffix', 'letter-rules': 'letter rules' };
+
+// On-screen keyboard: the basic letters, then the invisible controls.
+const LETTERS = [
+  ['a', 0x1820], ['e', 0x1821], ['i', 0x1822], ['o', 0x1823], ['u', 0x1824], ['ö', 0x1825], ['ü', 0x1826], ['ē', 0x1827],
+  ['n', 0x1828], ['ng', 0x1829], ['b', 0x182a], ['p', 0x182b], ['q', 0x182c], ['γ', 0x182d], ['m', 0x182e], ['l', 0x182f],
+  ['s', 0x1830], ['š', 0x1831], ['t', 0x1832], ['d', 0x1833], ['č', 0x1834], ['ǰ', 0x1835], ['y', 0x1836], ['r', 0x1837],
+  ['w', 0x1838], ['f', 0x1839], ['k', 0x183a], ['kh', 0x183b], ['c', 0x183c], ['z', 0x183d], ['h', 0x183e], ['ž', 0x183f],
+];
+const CONTROLS = [
+  ['NNBSP', 0x202f, 'suffix space'], ['MVS', 0x180e, 'vowel separator'], ['FVS1', 0x180b, 'variant 1'],
+  ['FVS2', 0x180c, 'variant 2'], ['FVS3', 0x180d, 'variant 3'], ['ZWJ', 0x200d, 'joiner'],
+];
+const isScript = (text) => /^[᠀-᢯ ‌‍ ]*$/.test(text);
 
 let current = null;
 let history = []; // words decided this session, for "back"
@@ -255,8 +276,12 @@ function renderCard() {
       <div class="left">
         <label for="latin">Correction: romanization, or paste traditional script</label>
         <input id="latin" type="text" autocomplete="off" spellcheck="false" placeholder="aguljal-a, or paste ᠠᠭᠤᠯᠵᠠᠯ᠎ᠠ" value="${escapeHtml(drafts[0]?.latin || drafts[0]?.script || '')}">
-        <div class="letters">${['γ', 'ǰ', 'č', 'š', 'ö', 'ü', '-'].map((l) => `<button type="button" data-letter="${l}">${l}</button>`).join('')}</div>
-        <div class="hint">Plain ASCII works: g j ch sh ng kh. Type o: for ö, u: for ü. A space before a suffix becomes NNBSP; "-" is MVS (qar-a). Pasted ᠮᠣᠩᠭᠣᠯ text is used as-is. Enter saves.</div>
+        <div class="keyboard" aria-label="Traditional script keyboard">
+          ${LETTERS.map(([l, cp]) => `<button type="button" class="k" data-cp="${cp}" title="${l}"><span class="g">${String.fromCodePoint(cp)}</span><span class="l">${l}</span></button>`).join('')}
+          ${CONTROLS.map(([l, cp, t]) => `<button type="button" class="k ctl" data-cp="${cp}" title="${t}">${l}</button>`).join('')}
+          <button type="button" class="k ctl" data-erase title="Delete the character before the cursor">⌫</button>
+        </div>
+        <div class="hint">Click letters above to build the word in script (it starts from the preview), or type romanization in plain ASCII: <b>g</b>=γ <b>j</b>=ǰ <b>ch</b>=č <b>sh</b>=š <b>q</b>/<b>k</b>=ᠬ, <b>o:</b>=ö <b>u:</b>=ü, space = suffix NNBSP, <b>-</b> = MVS (qar-a). Pasting script works too. Enter saves.</div>
       </div>
       <div class="preview" id="preview" aria-label="Preview"></div>
     </div>
@@ -270,13 +295,27 @@ function renderCard() {
     </div>`;
 
   card.querySelectorAll('.draft').forEach((b) => b.addEventListener('click', () => decide('accepted', drafts[Number(b.dataset.i)].script)));
-  card.querySelectorAll('[data-letter]').forEach((b) => b.addEventListener('click', () => {
+  card.querySelectorAll('.keyboard .k').forEach((b) => b.addEventListener('mousedown', (e) => e.preventDefault()));
+  card.querySelectorAll('.keyboard .k').forEach((b) => b.addEventListener('click', () => {
     const input = $('latin');
-    const at = input.selectionStart ?? input.value.length;
-    input.value = input.value.slice(0, at) + b.dataset.letter + input.value.slice(input.selectionEnd ?? at);
+    // Switch the field to script on first click, starting from what the preview shows.
+    if (!isScript(input.value)) {
+      input.value = previewScript ?? '';
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+    if ('erase' in b.dataset) {
+      const from = start === end ? Math.max(0, start - 1) : start;
+      input.value = input.value.slice(0, from) + input.value.slice(end);
+      input.setSelectionRange(from, from);
+    } else {
+      const ch = String.fromCodePoint(Number(b.dataset.cp));
+      input.value = input.value.slice(0, start) + ch + input.value.slice(end);
+      input.setSelectionRange(start + ch.length, start + ch.length);
+    }
     input.focus();
-    input.setSelectionRange(at + 1, at + 1);
-    preview();
+    preview(0);
   }));
   $('latin').addEventListener('input', preview);
   $('latin').addEventListener('keydown', (e) => {
@@ -391,6 +430,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'x' || e.key === 'X') { e.preventDefault(); decide('rejected', ''); }
   else if (e.key === 's' || e.key === 'S') { e.preventDefault(); decide('skipped', ''); }
   else if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); back(); }
+  else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); navigator.clipboard.writeText(current.word).then(() => toast(`Copied "${current.word}"`), () => toast('Clipboard not available')); }
 });
 
 // Resume where the file left off: recent decisions and "back" survive a reload.

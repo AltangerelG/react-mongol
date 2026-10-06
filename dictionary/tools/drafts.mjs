@@ -5,7 +5,7 @@
 // Drafts come from khudam (lexicon CC BY-SA 4.0). They are suggestions for a
 // human reviewer, never dictionary entries on their own.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { convertText } from 'khudam';
+import { convertText, decomposeWord, transliterateFallback } from 'khudam';
 import { fromScript } from '@gege-mn/mongol-bichig';
 
 const [input, output] = process.argv.slice(2);
@@ -24,18 +24,34 @@ const romanize = (script) => {
 };
 
 const words = freq.words.map(({ word, count, example }, index) => {
-  const tokens = convertText(word).filter((t) => t.candidates.length);
-  const token = tokens.length === 1 ? tokens[0] : null;
   const seen = new Set();
   const drafts = [];
-  for (const c of token?.candidates ?? []) {
-    const script = asWord(c.traditional);
-    if (seen.has(script)) continue;
+  const add = (traditional, source, guessed) => {
+    const script = asWord(traditional ?? '');
+    if (!script || seen.has(script)) return;
     seen.add(script);
-    drafts.push({ script, latin: romanize(script), source: c.source, guessed: Boolean(token.fallback) });
-  }
+    drafts.push({ script, latin: romanize(script), source, guessed });
+  };
+
+  // 1. Whole-word lexicon hits (khudam dictionary, Wiktionary).
+  const tokens = convertText(word).filter((t) => t.candidates.length);
+  const token = tokens.length === 1 ? tokens[0] : null;
+  if (token && !token.fallback) for (const c of token.candidates) add(c.traditional, c.source, false);
+  // 2. Stem + suffix analyses: every way the word splits into a known stem and suffix.
+  for (const c of safe(() => decomposeWord(word))) add(c.traditional, c.source ?? 'suffix-rule', false);
+  // 3. Letter-by-letter rules, last: right for regular words, a starting point for the rest.
+  add(safe(() => transliterateFallback(word)), 'letter-rules', true);
+
   return { rank: index + 1, word, count, example, drafts };
 });
+
+function safe(fn) {
+  try {
+    return fn() ?? [];
+  } catch {
+    return [];
+  }
+}
 
 writeFileSync(
   output,
@@ -53,4 +69,7 @@ writeFileSync(
 
 const guessed = words.filter((w) => w.drafts[0]?.guessed).length;
 const none = words.filter((w) => !w.drafts.length).length;
-console.log(`${words.length} words: ${guessed} with only a letter-by-letter guess, ${none} with no draft`);
+const several = words.filter((w) => w.drafts.length > 1).length;
+console.log(
+  `${words.length} words: ${several} with several drafts, ${guessed} with only a letter-by-letter guess, ${none} with no draft`,
+);
