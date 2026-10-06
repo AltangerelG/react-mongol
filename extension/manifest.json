@@ -19,10 +19,7 @@
     }
   },
   "background": {
-    "service_worker": "background.js",
-    "scripts": [
-      "background.js"
-    ]
+    "service_worker": "background.js"
   },
   "permissions": [
     "activeTab",
@@ -39,12 +36,6 @@
       ]
     }
   ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "mongol-bichig@react-mongol",
-      "strict_min_version": "121.0"
-    }
-  },
   "commands": {
     "_execute_action": {
       "suggested_key": {

@@ -89,6 +89,22 @@ function zip(directory) {
   return Buffer.concat([...locals, ...centrals, end]);
 }
 
+// Chrome and Edge: manifest.json as written (a service worker).
 const archive = join(here, `mongol-bichig-extension-${version}.zip`);
 writeFileSync(archive, zip(out));
-console.log(`extension/build/ and ${relative(join(here, '..'), archive)} (${(statSync(archive).size / 1024).toFixed(0)} KB)`);
+
+// Firefox runs MV3 background code as an event page (background.scripts),
+// which Chrome rejects, and needs an add-on id: a separate package.
+const firefox = join(here, 'build-firefox');
+rmSync(firefox, { recursive: true, force: true });
+cpSync(out, firefox, { recursive: true });
+const manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8'));
+manifest.background = { scripts: ['background.js'] };
+manifest.browser_specific_settings = { gecko: { id: 'mongol-bichig@react-mongol', strict_min_version: '121.0' } };
+writeFileSync(join(firefox, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+const firefoxArchive = join(here, `mongol-bichig-extension-${version}-firefox.zip`);
+writeFileSync(firefoxArchive, zip(firefox));
+
+for (const file of [archive, firefoxArchive]) {
+  console.log(`${relative(join(here, '..'), file)} (${(statSync(file).size / 1024).toFixed(0)} KB)`);
+}
