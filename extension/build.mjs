@@ -100,7 +100,15 @@ rmSync(firefox, { recursive: true, force: true });
 cpSync(out, firefox, { recursive: true });
 const manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8'));
 manifest.background = { scripts: ['background.js'] };
-manifest.browser_specific_settings = { gecko: { id: 'mongol-bichig@react-mongol', strict_min_version: '121.0' } };
+manifest.browser_specific_settings = {
+  gecko: {
+    id: 'mongol-bichig@react-mongol',
+    // Required for new add-ons: this extension collects no data at all.
+    // Supported from Firefox 140.
+    data_collection_permissions: { required: ['none'] },
+    strict_min_version: '140.0',
+  },
+};
 writeFileSync(join(firefox, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 const firefoxArchive = join(here, `mongol-bichig-extension-${version}-firefox.zip`);
 writeFileSync(firefoxArchive, zip(firefox));
