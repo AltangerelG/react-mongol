@@ -256,14 +256,28 @@ if you need to target them.
 
 ## How conversion works
 
-1. Your site's dictionary (reviewed entries only).
-2. The bundled open dictionary: human-reviewed words, CC BY-SA 4.0.
-3. [`khudam`](https://github.com/bigune/khudam): a 28k-word lexicon (CC BY-SA 4.0)
-   with suffix rules, falling back to letter-by-letter rules.
+Each word goes through, most trusted first:
 
-Suffix boundaries are written with NNBSP (U+202F) as Unicode specifies, and
-`,` `.` `:` after a word become ᠂ ᠃ ᠄. Automatic conversion is a draft; that is
-what the dictionaries are for.
+1. Your site's dictionary (reviewed entries only), then the bundled open
+   dictionary of human-reviewed words (CC BY-SA 4.0).
+2. **Grammar**: a word that is a stem plus a case ending (хотод = хот +
+   dative) gets its stem from the dictionaries and its ending by rule,
+   detached with NNBSP: genitive yin/un/ün/u, accusative yi/i, dative du/tu,
+   ablative ača/eče, instrumental bar/iyar, comitative tai/tei, chosen by the
+   classical stem's harmony and last letter. One reviewed stem therefore
+   corrects every inflected form of it.
+3. [`khudam`](https://github.com/bigune/khudam)'s 28k-word lexicon
+   (CC BY-SA 4.0). The grammar may re-write how a lexicon entry attaches its
+   ending, never its letters.
+4. For words no dictionary knows: rules (native в is b, х/г follow vowel
+   harmony, long vowels as V+γ+V, diphthongs, a vowel after letters that
+   cannot end a word, ...).
+
+The rules, and which spellings Cyrillic cannot decide without a dictionary,
+are in [dictionary/GRAMMAR.md](dictionary/GRAMMAR.md). `analyze`, `inflect`,
+`caseSuffix` and `transliterate` are exported. Numbers become Mongolian
+digits, and `,` `.` `:` after a word become ᠂ ᠃ ᠄. Automatic conversion is a
+draft; that is what the dictionaries are for.
 
 ## Browser support
 

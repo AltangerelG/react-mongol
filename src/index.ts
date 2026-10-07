@@ -68,3 +68,6 @@ export type {
   MongolScriptState,
   MongolToggleProps,
 } from './MongolToggle.js';
+
+export { analyze, caseSuffix, inflect, romanToScript, stemFacts, transliterate } from './grammar.js';
+export type { Analysis, Case, StemEnd, StemFacts } from './grammar.js';
