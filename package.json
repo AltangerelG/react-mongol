@@ -1,6 +1,6 @@
 {
   "name": "react-mongol",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Show Cyrillic Mongolian websites in traditional script (Mongol bichig) with one toggle; React primitives for vertical layout, mixed-script orientation and Unicode-correct text.",
   "keywords": [
     "react",
