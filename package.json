@@ -59,7 +59,8 @@
     "review": "node dictionary/tools/review/server.mjs",
     "dictionary": "node dictionary/tools/build-dictionary.mjs",
     "extension": "npm run dictionary && node extension/build.mjs",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "version": "node extension/version.mjs && git add extension/manifest.json"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"

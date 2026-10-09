@@ -19,8 +19,12 @@ npm install
 npm run extension        # builds extension/build/ and the store zip
 ```
 
-- **Chrome / Edge:** open `chrome://extensions` (or `edge://extensions`), turn on
-  Developer mode, choose **Load unpacked**, and pick `extension/build`.
+- **Chrome / Edge / Brave:** open `chrome://extensions` (or `edge://extensions`,
+  `brave://extensions`), turn on Developer mode, choose **Load unpacked**, and
+  pick `extension/build`. Without building: download
+  `mongol-bichig-extension-<version>.zip` from the
+  [latest release](https://github.com/AltangerelG/react-mongol/releases/latest),
+  unzip it, and load that folder.
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, choose **Load
   Temporary Add-on**, and pick `extension/build-firefox/manifest.json`.
 

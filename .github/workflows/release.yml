@@ -1,6 +1,7 @@
 name: Release
 
-# Publishing a GitHub Release (tag vX.Y.Z) publishes that version to npm.
+# Publishing a GitHub Release (tag vX.Y.Z) publishes that version to npm and
+# attaches the browser extension's store zips to the release.
 # Authentication is npm trusted publishing (OIDC): no token is stored
 # anywhere, and npm attaches a provenance statement linking the package to
 # this workflow run. Configure once on npmjs.com: package settings ->
@@ -12,7 +13,7 @@ on:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write # attach the extension zips to the release
   id-token: write
 
 jobs:
@@ -35,8 +36,19 @@ jobs:
             echo "Release tag $GITHUB_REF_NAME does not match package.json ($expected)" >&2
             exit 1
           fi
+          extension="v$(node -p "require('./extension/manifest.json').version")"
+          if [ "$extension" != "$expected" ]; then
+            echo "extension/manifest.json ($extension) does not match package.json ($expected); bump with npm version" >&2
+            exit 1
+          fi
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Attach the extension to the release
+        run: |
+          npm run extension
+          gh release upload "$GITHUB_REF_NAME" extension/*.zip --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm publish --access public
