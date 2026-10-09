@@ -48,6 +48,8 @@ jobs:
       - name: Attach the extension to the release
         run: |
           npm run extension
+          # Firefox Add-ons asks for the source of the bundled (minified) code.
+          git archive --format=zip --prefix="react-mongol-${GITHUB_REF_NAME#v}/"             -o "extension/mongol-bichig-extension-${GITHUB_REF_NAME#v}-source.zip" "$GITHUB_REF_NAME"
           gh release upload "$GITHUB_REF_NAME" extension/*.zip --clobber
         env:
           GH_TOKEN: ${{ github.token }}
