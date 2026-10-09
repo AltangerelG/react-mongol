@@ -38,8 +38,12 @@ switch never download it. The reader's choice is remembered.
 - **What turns vertical:** the whole page, the way Mongol bichig is laid out:
   every line runs top to bottom, the header becomes the leftmost column and the
   footer the rightmost, and the page scrolls sideways (the mouse wheel too).
-  Build the layout with logical properties (`inline-size`, `margin-block`,
-  flex/grid) and it rotates with the text; fixed pixel widths do not.
+  The site's own CSS turns with it, like a transposed matrix: widths become
+  heights, `top` becomes `left`, a slide that moved right to left moves bottom
+  to top, and media queries ask about the screen's height (a 900px-tall screen
+  gets the layout the site made for 900px wide). Small floating buttons keep
+  their place. Style sheets served from another domain cannot be read and
+  stay as they are.
   `vertical="auto"` turns only the reading area vertical (elements marked
   `data-mongol-vertical`, or `main` / `article`); `vertical="none"` only
   converts the script.

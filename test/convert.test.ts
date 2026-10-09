@@ -86,17 +86,26 @@ describe('applyMongolScript', () => {
     expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(false);
   });
 
-  it('in page mode, swaps overflow axes and widens full-screen sections, and back', () => {
+  it('in page mode, transposes inline styles and style sheets, and puts them back', () => {
     const hero = document.createElement('section');
-    hero.style.cssText = `overflow-x: hidden; min-height: ${window.innerHeight}px`;
+    hero.setAttribute('style', 'overflow-x: hidden; min-height: 100vh');
     document.body.append(hero);
+    const sheet = document.createElement('style');
+    sheet.textContent = '.card { height: 190px; }';
+    document.head.append(sheet);
+
     const restore = applyMongolScript(convert);
-    expect(hero.getAttribute('data-mongol-ox')).toBe('hidden');
-    expect(hero.hasAttribute('data-mongol-fill')).toBe(true);
-    expect(document.querySelector('main')!.hasAttribute('data-mongol-fill')).toBe(false);
+    expect(hero.style.overflowY).toBe('hidden');
+    expect(hero.style.minWidth).toBe('100vw');
+    const clone = document.querySelector('style[data-mongol-transposed]');
+    expect(clone?.textContent).toContain('width: 190px');
+    expect(sheet.sheet!.disabled).toBe(true);
+
     restore();
-    expect(hero.hasAttribute('data-mongol-ox')).toBe(false);
-    expect(hero.hasAttribute('data-mongol-fill')).toBe(false);
+    expect(hero.getAttribute('style')).toBe('overflow-x: hidden; min-height: 100vh');
+    expect(document.querySelector('style[data-mongol-transposed]')).toBeNull();
+    expect(sheet.sheet!.disabled).toBe(false);
+    sheet.remove();
   });
 
   it('keeps the page horizontal when converting only a subtree', () => {

@@ -1,45 +1,30 @@
-// Page mode turns a horizontal site sideways, but the site's CSS still speaks
-// in physical axes. This carries the patterns that break across to the other
-// axis, all through attributes and custom properties so restore() undoes it:
+// Page mode: the site's own CSS, transposed (see transpose.ts), so a page
+// designed for horizontal text keeps its design when turned vertical.
 //
-// - overflow: `overflow-x: hidden` (no sideways scroll) becomes `overflow-y`.
-// - full-screen sections: `min-height: 100vh` also fills the width.
-// - fixed bars: a header across the top becomes the page's first column, down
-//   the left side (a bar along the bottom, a column fixed on the right).
-// - collapsed boxes: a box sized by its height whose content is positioned
-//   (an image card) has no width once turned; it gets its old height as width.
-// - overflowing boxes: a width meant for a line (`w-full`, a card width) now
-//   caps how far content flows sideways; boxes grow to fit their content.
+// - Style sheets: each readable sheet is replaced by a transposed copy, kept in
+//   sync as the site adds or changes styles. Cross-origin sheets stay as they are.
+// - Inline styles: transposed too, and again whenever the site changes them
+//   (a carousel moving its slides), so they move along the transposed axis.
+// - A fixed header bar becomes the page's first column and scrolls away with
+//   it, rather than staying over the content.
+// - Small floating widgets (call / chat buttons) keep their original layout.
+//
+// restore() puts every sheet and style attribute back.
+import { parseDeclarations, serializeDeclarations, transposeBlock, transposeCondition, transposeSheet } from './transpose.js';
 
-const OVERFLOWS = ['visible', 'hidden', 'clip', 'scroll', 'auto'] as const;
-const NOT_BOXES = 'img, picture, video, audio, canvas, iframe, embed, object, svg, input, textarea, select, button, br, hr';
-const ATTRIBUTES = ['data-mongol-ox', 'data-mongol-oy', 'data-mongol-fill', 'data-mongol-bar', 'data-mongol-size', 'data-mongol-grow'];
-const PROPERTIES = ['--mongol-size', '--mongol-grow', '--mongol-offset'];
+const CLONE = 'data-mongol-transposed';
+const SKIP = '[data-mongol-skip], [data-mongol-keep]';
+// Kept widgets keep these, as measured before the page turned.
+const PINNED = [
+  'width', 'height', 'top', 'right', 'bottom', 'left',
+  'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+  'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+  'transform',
+] as const;
 
 export const PAGE_LAYOUT_CSS = `
-${OVERFLOWS.map(
-  (value) =>
-    `[data-mongol-ox="${value}"] { overflow-y: ${value} !important; }\n` +
-    `[data-mongol-oy="${value}"] { overflow-x: ${value} !important; }`,
-).join('\n')}
-[data-mongol-fill] { min-width: 100vw !important; }
-[data-mongol-bar] {
-  top: 0 !important; bottom: 0 !important;
-  width: auto !important; height: auto !important; max-height: none !important;
-}
 /* The header is the page's first column and scrolls away with it. */
-[data-mongol-bar="start"] { position: absolute !important; left: 0 !important; right: auto !important; }
-[data-mongol-bar="end"] { left: auto !important; right: 0 !important; }
-[data-mongol-size] { min-width: var(--mongol-size) !important; }
-[data-mongol-grow] { min-width: var(--mongol-grow) !important; max-width: none !important; }
-html[data-mongol-page] body { padding-left: var(--mongol-offset, 0) !important; }`;
-
-/** Whether a box paints its own background. */
-function opaque(style: CSSStyleDeclaration): boolean {
-  if (style.backgroundImage !== 'none') return true;
-  const alpha = /rgba?\([^)]*,\s*([\d.]+)\)/.exec(style.backgroundColor.replace(/\s*\/\s*/, ', '));
-  return style.backgroundColor !== 'transparent' && (alpha === null || parseFloat(alpha[1]!) > 0.5);
-}
+[data-mongol-bar] { position: absolute !important; }`;
 
 export interface PageLayout {
   /** Adapt the page; call once it is vertical. */
@@ -53,164 +38,192 @@ export interface PageLayout {
 export function measurePageLayout(doc: Document): PageLayout {
   const view = doc.defaultView!;
   const html = doc.documentElement;
-  const touched = new Set<Element>();
-  const styled = new Set<Element>();
-  const skipped = (element: Element) => element.closest('[data-mongol-skip]') !== null;
 
-  // Horizontal sizes, to give collapsed boxes their height back as width.
-  const heights = new Map<Element, number>();
-  // Boxes that really scrolled vertically: scrollers, not boxes to grow.
-  const scrollers = new Set<Element>();
-  const bars = new Map<Element, 'start' | 'end'>();
+  // Fixed elements: a bar across the top is the header; small ones are widgets.
+  const bars: Element[] = [];
+  const kept = new Map<Element, Map<Element, string[]>>();
   for (const element of doc.body.querySelectorAll('*')) {
-    if (skipped(element) || element.matches(NOT_BOXES)) continue;
+    if (element.closest('[data-mongol-skip]')) continue;
     const style = view.getComputedStyle(element);
-    if (style.display === 'none' || style.display === 'contents' || style.display.startsWith('inline')) continue;
+    if (style.position !== 'fixed' || style.display === 'none') continue;
+    if (element.parentElement?.closest('[data-mongol-keep-measured]')) continue;
     const rect = element.getBoundingClientRect();
-    if (style.position === 'fixed') {
-      if (rect.width >= view.innerWidth * 0.9 && rect.height > 0 && rect.height < view.innerHeight / 2) {
-        bars.set(element, rect.top + rect.height / 2 < view.innerHeight / 2 ? 'start' : 'end');
+    if (rect.width >= view.innerWidth * 0.9 && rect.height > 0 && rect.height < view.innerHeight / 2) {
+      if (rect.top < view.innerHeight / 2) bars.push(element);
+    } else if (rect.width * rect.height < view.innerWidth * view.innerHeight * 0.2) {
+      const pins = new Map<Element, string[]>();
+      for (const node of [element, ...element.querySelectorAll('*')]) {
+        const computed = view.getComputedStyle(node);
+        pins.set(node, PINNED.map((name) => computed.getPropertyValue(name)));
       }
-      continue;
+      element.setAttribute('data-mongol-keep-measured', '');
+      kept.set(element, pins);
     }
-    if (style.position !== 'absolute' && rect.height > 0 && rect.width > 0) heights.set(element, rect.height);
-    if (/auto|scroll/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 1) scrollers.add(element);
   }
+  for (const element of kept.keys()) element.removeAttribute('data-mongol-keep-measured');
 
-  const mark = (element: Element, name: string, value = '') => {
-    element.setAttribute(name, value);
-    touched.add(element);
-  };
-  // Elements without a style attribute of their own get it removed again on restore.
-  const unstyled = new Set<Element>();
-  const setProperty = (element: Element, name: string, px: number) => {
-    if (!element.hasAttribute('style')) unstyled.add(element);
-    (element as HTMLElement).style.setProperty(name, `${Math.ceil(px)}px`);
-    styled.add(element);
+  // Style attributes as the site wrote them, and what was written in their place.
+  const originals = new Map<Element, string | null>();
+  const site = new Map<Element, string>();
+  const written = new Map<Element, string>();
+  const skipped = (element: Element) => element.closest(SKIP) !== null;
+
+  const write = (element: Element, text: string) => {
+    element.setAttribute('style', text);
+    // Read back the browser's own serialization, so the site's later edits
+    // (which reserialize the whole attribute) differ only where it edited.
+    const canonical = (element as HTMLElement).style?.cssText ?? text;
+    if (canonical !== text) element.setAttribute('style', canonical);
+    written.set(element, element.getAttribute('style') ?? '');
   };
 
-  /** Overflow axes and full-screen sections: computed styles only. */
-  const adaptStyles = (start: Node): void => {
-    if (start.nodeType !== Node.ELEMENT_NODE && start.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
-    const elements = [...(start as ParentNode).querySelectorAll('*')];
-    if (start.nodeType === Node.ELEMENT_NODE) elements.unshift(start as Element);
-    // Read every style first, then write, so the page is restyled once.
-    const changes: [Element, string, string, boolean][] = [];
-    for (const element of elements) {
-      if (element.hasAttribute('data-mongol-ox') || element.hasAttribute('data-mongol-fill') || skipped(element)) continue;
-      const style = view.getComputedStyle(element);
-      const full =
-        style.position !== 'fixed' &&
-        style.position !== 'absolute' &&
-        parseFloat(style.minHeight) >= view.innerHeight * 0.9;
-      if (style.overflowX !== style.overflowY || full) changes.push([element, style.overflowX, style.overflowY, full]);
+  const transposeInline = (element: Element) => {
+    if (skipped(element)) return;
+    const current = element.getAttribute('style');
+    if (current === null) {
+      if (site.has(element)) site.set(element, ''); // the site removed it
+      return;
     }
-    for (const [element, x, y, full] of changes) {
-      if (x !== y) {
-        mark(element, 'data-mongol-ox', x);
-        mark(element, 'data-mongol-oy', y);
+    if (!site.has(element)) {
+      originals.set(element, current);
+      site.set(element, current);
+    } else if (current === written.get(element)) {
+      return; // our own write
+    } else {
+      // The site changed its style: apply what it changed to its own version.
+      const ours = new Map(parseDeclarations(written.get(element)!).map((d) => [d.name, d]));
+      const now = parseDeclarations(current);
+      const model = new Map(parseDeclarations(site.get(element)!).map((d) => [d.name, d]));
+      const kept = now.filter((d) => ours.get(d.name)?.value === d.value);
+      if (!kept.length && ours.size) {
+        model.clear(); // replaced wholesale
+        for (const d of now) model.set(d.name, d);
+      } else {
+        const names = new Set(now.map((d) => d.name));
+        for (const name of ours.keys()) if (!names.has(name)) model.delete(name);
+        for (const d of now) {
+          if (ours.get(d.name)?.value === d.value && ours.get(d.name)?.important === d.important) continue;
+          model.delete(d.name);
+          model.set(d.name, d);
+        }
       }
-      if (full) mark(element, 'data-mongol-fill');
+      site.set(element, serializeDeclarations([...model.values()]));
+    }
+    write(element, transposeBlock(site.get(element)!, doc.baseURI));
+  };
+
+  const transposeSubtree = (start: Node) => {
+    if (start.nodeType !== Node.ELEMENT_NODE) return;
+    const element = start as Element;
+    if (element.hasAttribute('style')) transposeInline(element);
+    for (const child of element.querySelectorAll('[style]')) transposeInline(child);
+  };
+
+  // Style sheets: a transposed copy after each, the original switched off.
+  const sheets = new Map<CSSStyleSheet, { clone: HTMLStyleElement; rules: number }>();
+  const ruleCount = (sheet: CSSStyleSheet) => {
+    try {
+      return sheet.cssRules.length;
+    } catch {
+      return -1;
+    }
+  };
+  const syncSheets = () => {
+    const present = new Set<CSSStyleSheet>();
+    for (const sheet of doc.styleSheets) {
+      // (ownerNode is missing in some DOM implementations; jsdom among them.)
+      const owner = (sheet.ownerNode ??
+        [...doc.querySelectorAll('style, link')].find((el) => (el as HTMLStyleElement).sheet === sheet) ??
+        null) as Element | null;
+      if (!owner || owner.hasAttribute(CLONE) || owner.hasAttribute('data-mongol-own') || owner.closest?.('[data-mongol-skip]')) continue;
+      present.add(sheet);
+      const known = sheets.get(sheet);
+      const rules = ruleCount(sheet);
+      if (known ? known.rules === rules : sheet.disabled) continue; // unchanged, or switched off by the site
+      const text = transposeSheet(sheet, doc.baseURI);
+      if (text === null) continue;
+      const clone = known?.clone ?? doc.createElement('style');
+      clone.setAttribute(CLONE, '');
+      const media = sheet.media?.mediaText;
+      clone.textContent = media ? `@media ${transposeCondition(media)} { ${text} }` : text;
+      if (!known) owner.after(clone);
+      sheet.disabled = true;
+      sheets.set(sheet, { clone, rules });
+    }
+    // Sheets the site removed (or replaced, as a <style> does when its text changes).
+    for (const [sheet, { clone }] of sheets) {
+      if (present.has(sheet)) continue;
+      clone.remove();
+      sheets.delete(sheet);
     }
   };
 
-  /**
-   * How wide a box must be for its in-flow content: text and children that
-   * take up space. Positioned children (hidden dropdown menus, decorations)
-   * do not count, though scrollWidth would count them.
-   */
-  const range = doc.createRange();
-  const neededWidth = (element: Element, style: CSSStyleDeclaration): number => {
-    const left = element.getBoundingClientRect().left;
-    let right = left;
-    for (const child of element.childNodes) {
-      let rect: DOMRect;
-      if (child.nodeType === Node.TEXT_NODE) {
-        if (!(child as Text).data.trim()) continue;
-        range.selectNodeContents(child);
-        rect = range.getBoundingClientRect();
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        const childStyle = view.getComputedStyle(child as Element);
-        if (childStyle.position === 'absolute' || childStyle.position === 'fixed' || childStyle.display === 'none') continue;
-        rect = (child as Element).getBoundingClientRect();
-        rect = new DOMRect(rect.x, rect.y, rect.width + Math.max(0, parseFloat(childStyle.marginRight) || 0), rect.height);
-      } else continue;
-      if (rect.width > 0 || rect.height > 0) right = Math.max(right, rect.right);
-    }
-    return right - left + (parseFloat(style.paddingRight) || 0) + (parseFloat(style.borderRightWidth) || 0);
-  };
-
-  /** Boxes whose content runs past their width grow to fit, parents after children. */
-  const grow = (): void => {
-    for (let round = 0; round < 8; round++) {
-      const changes: [Element, number][] = [];
-      for (const element of doc.body.querySelectorAll('*')) {
-        if (element.matches(NOT_BOXES) || scrollers.has(element) || bars.has(element)) continue;
-        const width = element.clientWidth;
-        // scrollWidth is a cheap first filter; the real measure follows.
-        if (width === 0 || element.scrollWidth <= width + 1) continue;
-        const style = view.getComputedStyle(element);
-        if (style.display.startsWith('inline') || style.position === 'fixed' || style.position === 'absolute') continue;
-        if (skipped(element)) continue;
-        const needed = neededWidth(element, style);
-        const current = (element as HTMLElement).offsetWidth;
-        if (needed > current + 1) changes.push([element, needed]);
-      }
-      if (!changes.length) return;
-      for (const [element, needed] of changes) {
-        setProperty(element, '--mongol-grow', needed);
-        mark(element, 'data-mongol-grow');
-      }
-    }
-  };
-
-  let scheduled = false;
-  const regrow = () => {
-    if (scheduled) return;
-    scheduled = true;
-    view.setTimeout(() => {
-      scheduled = false;
-      grow();
-    }, 200);
+  let observer: MutationObserver | null = null;
+  let timer = 0;
+  let pending = false;
+  const scheduleSync = () => {
+    if (pending) return;
+    pending = true;
+    queueMicrotask(() => {
+      pending = false;
+      syncSheets();
+    });
   };
 
   return {
     apply() {
-      adaptStyles(html);
-      for (const [element, side] of bars) mark(element, 'data-mongol-bar', side);
-      // Boxes that lost their width when turned get their old height as width.
-      const collapsed: [Element, number][] = [];
-      for (const [element, height] of heights) {
-        if (element.isConnected && element.getBoundingClientRect().width < 2) collapsed.push([element, height]);
+      for (const widget of kept.keys()) widget.setAttribute('data-mongol-keep', '');
+      syncSheets();
+      transposeSubtree(html);
+      for (const element of bars) element.setAttribute('data-mongol-bar', '');
+      for (const [widget, pins] of kept) {
+        for (const [node, values] of pins) {
+          originals.set(node, node.getAttribute('style'));
+          const style = (node as HTMLElement).style;
+          if (!style) continue;
+          PINNED.forEach((name, i) => style.setProperty(name, values[i]!, 'important'));
+          if (node === widget) style.setProperty('writing-mode', 'horizontal-tb', 'important');
+        }
       }
-      for (const [element, height] of collapsed) {
-        setProperty(element, '--mongol-size', height);
-        mark(element, 'data-mongol-size');
-      }
-      grow();
-      // Room for a header turned into a left column, as the site leaves room at
-      // the top. A transparent header is meant to lie over the content (white
-      // text on a hero image), so it gets none.
-      let offset = 0;
-      for (const [element, side] of bars) {
-        if (side !== 'start' || !opaque(view.getComputedStyle(element))) continue;
-        offset = Math.max(offset, element.getBoundingClientRect().width);
-      }
-      if (offset && offset < view.innerWidth / 3) setProperty(html, '--mongol-offset', offset);
+      observer = new MutationObserver((records) => {
+        for (const record of records) {
+          const target = record.target as Element;
+          if (record.type === 'attributes') transposeInline(target);
+          else if (target === doc.head || target.closest?.('head') || target.nodeName === 'STYLE') scheduleSync();
+          else
+            record.addedNodes.forEach((node) => {
+              if (node.nodeName === 'STYLE' || node.nodeName === 'LINK') scheduleSync();
+            });
+        }
+      });
+      observer.observe(html, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style'] });
+      // Libraries that add rules with insertRule() change no DOM; look now and then.
+      timer = view.setInterval(syncSheets, 1000);
+      // <link> sheets that are still loading.
+      doc.querySelectorAll('link[rel~="stylesheet"]').forEach((link) => link.addEventListener('load', scheduleSync));
     },
     added(node) {
-      adaptStyles(node);
-      regrow();
+      transposeSubtree(node);
     },
     restore() {
-      for (const element of touched) for (const name of ATTRIBUTES) element.removeAttribute(name);
-      for (const element of styled) {
-        for (const name of PROPERTIES) (element as HTMLElement).style.removeProperty(name);
-        if (unstyled.has(element) && element.getAttribute('style') === '') element.removeAttribute('style');
+      observer?.disconnect();
+      view.clearInterval(timer);
+      for (const [sheet, { clone }] of sheets) {
+        clone.remove();
+        sheet.disabled = false;
       }
-      touched.clear();
-      styled.clear();
-      unstyled.clear();
+      sheets.clear();
+      for (const [element, original] of originals) {
+        // The site's latest version where it changed it since, else the original.
+        const latest = site.get(element) ?? original;
+        if (latest === null) element.removeAttribute('style');
+        else element.setAttribute('style', latest);
+      }
+      for (const element of bars) element.removeAttribute('data-mongol-bar');
+      for (const widget of kept.keys()) widget.removeAttribute('data-mongol-keep');
+      originals.clear();
+      site.clear();
+      written.clear();
     },
   };
 }

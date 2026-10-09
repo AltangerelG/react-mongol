@@ -144,8 +144,15 @@ export function applyMongolScript(
     const page = doc.scrollingElement ?? html;
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || event.ctrlKey) return;
     if (page.scrollHeight > page.clientHeight + 1) return; // the page still scrolls vertically
-    for (let el = event.target as Element | null; el && el !== html; el = el.parentElement) {
-      if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) return;
+    for (let el = event.target as Element | null; el && el !== html && el !== doc.body; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(style.overflowY)) return;
+      // A box that scrolls sideways (a transposed list) takes the wheel first.
+      if (el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(style.overflowX)) {
+        const before = el.scrollLeft;
+        el.scrollLeft += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+        if (el.scrollLeft !== before) return event.preventDefault();
+      }
     }
     page.scrollLeft += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
     event.preventDefault();
@@ -154,6 +161,7 @@ export function applyMongolScript(
 
   const style = doc.createElement('style');
   style.id = STYLE_ID;
+  style.setAttribute('data-mongol-own', ''); // never transposed itself
   const font = useFont ? `font-family: ${options.fontFamily ?? DEFAULT_MONGOLIAN_FONT_FAMILY};` : '';
   style.textContent = `
 ${useFont ? `[data-mongol-text] { ${font} }` : ''}
