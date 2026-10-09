@@ -7,6 +7,12 @@ mixed-script orientation and Unicode-correct text.
 [![CI](https://github.com/AltangerelG/react-mongol/actions/workflows/ci.yml/badge.svg)](https://github.com/AltangerelG/react-mongol/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/react-mongol.svg)](https://www.npmjs.com/package/react-mongol)
 
+**[Live demo](https://altangerelg.github.io/react-mongol/)** · [Browser extension](extension/README.md)
+
+| Cyrillic | One click: Mongol bichig |
+| --- | --- |
+| ![hdc.gov.mn in Cyrillic](docs/screenshots/before.png) | ![The same page in traditional script, laid out vertically](docs/screenshots/after.png) |
+
 ```bash
 npm install react-mongol
 # or straight from GitHub (builds itself on install):
@@ -123,8 +129,9 @@ export function Greeting() {
 }
 ```
 
-A runnable demo of every feature lives in [`examples/demo`](examples/demo)
-(`npm run build` at the root, then `npm install && npm run dev` there).
+A runnable demo of every feature lives in [`examples/demo`](examples/demo),
+published at <https://altangerelg.github.io/react-mongol/> (to run it locally:
+`npm run build` at the root, then `npm install && npm run dev` there).
 
 `Mongol` sets `writing-mode: vertical-lr` and a Mongolian font stack. Because the
 block direction is now horizontal, **`height` controls line length** and `width`

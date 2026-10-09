@@ -1,0 +1,52 @@
+name: Demo
+
+# Builds examples/demo against the library in this commit and publishes it to
+# GitHub Pages: https://altangerelg.github.io/react-mongol/
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push replaces a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            examples/demo/package-lock.json
+      # The demo links the library from the repo root; `npm ci` builds it (prepare).
+      - run: npm ci
+      - run: npm ci
+        working-directory: examples/demo
+      # Relative asset paths, so the site works under /react-mongol/.
+      - run: npx vite build --base=./
+        working-directory: examples/demo
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: examples/demo/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
