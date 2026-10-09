@@ -1,5 +1,6 @@
 import type { CyrillicConverter } from './convert.js';
 import { DEFAULT_MONGOLIAN_FONT_FAMILY } from './fonts.js';
+import { measurePageLayout, PAGE_LAYOUT_CSS } from './layout.js';
 
 /**
  * Where the page turns vertical.
@@ -44,14 +45,6 @@ const ATTRIBUTES = ['title', 'placeholder', 'aria-label', 'alt'] as const;
 // Text worth converting: Cyrillic words, or digits (written as Mongolian digits).
 const CYRILLIC = /[А-ЯЁӨҮа-яёөү0-9]/;
 const STYLE_ID = 'react-mongol-script-style';
-const OVERFLOWS = ['visible', 'hidden', 'clip', 'scroll', 'auto'] as const;
-// A sideways page swaps the axes, so the site's overflow axes swap too: its
-// `overflow-x: hidden` (no sideways scroll) becomes `overflow-y: hidden`.
-const SWAP_OVERFLOW_CSS = OVERFLOWS.map(
-  (value) =>
-    `[data-mongol-ox="${value}"] { overflow-y: ${value} !important; }\n` +
-    `[data-mongol-oy="${value}"] { overflow-x: ${value} !important; }`,
-).join('\n');
 
 interface Tracked {
   original: string;
@@ -141,6 +134,9 @@ export function applyMongolScript(
   const vertical = options.vertical ?? (root === doc.body ? 'page' : 'auto');
   const regions: Element[] = vertical === 'auto' ? options.regions ?? findRegions(root) : [];
   for (const region of regions) region.setAttribute('data-mongol-vertical-on', '');
+  const view = doc.defaultView;
+  // Measured while the page is still horizontal.
+  const layout = vertical === 'page' && view ? measurePageLayout(doc) : null;
   if (vertical === 'page') html.setAttribute('data-mongol-page', '');
 
   // A sideways page needs the wheel to scroll sideways.
@@ -154,41 +150,7 @@ export function applyMongolScript(
     page.scrollLeft += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
     event.preventDefault();
   };
-  const view = doc.defaultView;
   if (vertical === 'page') view?.addEventListener('wheel', wheel, { passive: false });
-
-  // Site CSS is written for horizontal axes. In page mode, carry the two
-  // patterns that break when turned sideways over to the other axis:
-  // overflow (see SWAP_OVERFLOW_CSS) and full-screen sections, whose
-  // `min-height: 100vh` must become a full width or the page ends mid-screen.
-  const adapted = new Set<Element>();
-  const adaptLayout = (start: Node): void => {
-    if (vertical !== 'page' || !view) return;
-    if (start.nodeType !== Node.ELEMENT_NODE && start.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
-    const elements = [...(start as ParentNode).querySelectorAll('*')];
-    if (start.nodeType === Node.ELEMENT_NODE) elements.unshift(start as Element);
-    // Read every style first, then write, so the page is restyled once.
-    const changes: [Element, string, string, boolean][] = [];
-    for (const element of elements) {
-      if (adapted.has(element) || element.closest('[data-mongol-skip]')) continue;
-      const style = view.getComputedStyle(element);
-      const full =
-        style.position !== 'fixed' &&
-        style.position !== 'absolute' &&
-        parseFloat(style.minHeight) >= view.innerHeight * 0.9;
-      if (style.overflowX !== style.overflowY || full) {
-        changes.push([element, style.overflowX, style.overflowY, full]);
-      }
-    }
-    for (const [element, x, y, full] of changes) {
-      adapted.add(element);
-      if (x !== y) {
-        element.setAttribute('data-mongol-ox', x);
-        element.setAttribute('data-mongol-oy', y);
-      }
-      if (full) element.setAttribute('data-mongol-fill', '');
-    }
-  };
 
   const style = doc.createElement('style');
   style.id = STYLE_ID;
@@ -204,8 +166,7 @@ html[data-mongol-page] {
 html[data-mongol-page] body *:not([data-mongol-skip], [data-mongol-skip] *) {
   writing-mode: inherit !important;
 }
-${SWAP_OVERFLOW_CSS}
-[data-mongol-fill] { min-width: 100vw !important; }
+${layout ? PAGE_LAYOUT_CSS : ''}
 [data-mongol-vertical-on] {
   writing-mode: vertical-lr;
   text-orientation: mixed;
@@ -220,7 +181,7 @@ ${SWAP_OVERFLOW_CSS}
   doc.head.appendChild(style);
 
   walk(root);
-  adaptLayout(html);
+  layout?.apply();
 
   const observer = new MutationObserver((records) => {
     for (const record of records) {
@@ -229,7 +190,7 @@ ${SWAP_OVERFLOW_CSS}
       else
         record.addedNodes.forEach((node) => {
           walk(node);
-          adaptLayout(node);
+          layout?.added(node);
         });
     }
   });
@@ -253,11 +214,7 @@ ${SWAP_OVERFLOW_CSS}
     }
     for (const region of regions) region.removeAttribute('data-mongol-vertical-on');
     html.removeAttribute('data-mongol-page');
-    for (const element of adapted) {
-      element.removeAttribute('data-mongol-ox');
-      element.removeAttribute('data-mongol-oy');
-      element.removeAttribute('data-mongol-fill');
-    }
+    layout?.restore();
     view?.removeEventListener('wheel', wheel);
     for (const element of fonted) element.removeAttribute('data-mongol-text');
     style.remove();
