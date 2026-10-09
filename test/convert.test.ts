@@ -86,6 +86,19 @@ describe('applyMongolScript', () => {
     expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(false);
   });
 
+  it('in page mode, swaps overflow axes and widens full-screen sections, and back', () => {
+    const hero = document.createElement('section');
+    hero.style.cssText = `overflow-x: hidden; min-height: ${window.innerHeight}px`;
+    document.body.append(hero);
+    const restore = applyMongolScript(convert);
+    expect(hero.getAttribute('data-mongol-ox')).toBe('hidden');
+    expect(hero.hasAttribute('data-mongol-fill')).toBe(true);
+    expect(document.querySelector('main')!.hasAttribute('data-mongol-fill')).toBe(false);
+    restore();
+    expect(hero.hasAttribute('data-mongol-ox')).toBe(false);
+    expect(hero.hasAttribute('data-mongol-fill')).toBe(false);
+  });
+
   it('keeps the page horizontal when converting only a subtree', () => {
     const restore = applyMongolScript(convert, { root: document.querySelector('main')! });
     expect(document.documentElement.hasAttribute('data-mongol-page')).toBe(false);
